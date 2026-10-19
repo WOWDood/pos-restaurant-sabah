@@ -54,27 +54,27 @@
                 <h2 class="text-2xl font-bold text-gray-900 text-center">Everything You Need</h2>
                 <p class="text-gray-500 text-center mt-2">From taking orders to processing payments, our system handles it all.</p>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <x-card>
                         <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mb-4">
                             &#9638;
                         </div>
                         <h3 class="font-semibold text-gray-900">QR Code Ordering</h3>
                         <p class="text-sm text-gray-500 mt-2">Customers scan a QR code at their table to browse the menu and place orders directly from their phone.</p>
-                    </div>
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    </x-card>
+                    <x-card>
                         <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mb-4">
                             &#128179;
                         </div>
                         <h3 class="font-semibold text-gray-900">Point of Sale</h3>
                         <p class="text-sm text-gray-500 mt-2">A fast and intuitive cashier interface for quick order entry, table assignment, and receipt printing.</p>
-                    </div>
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    </x-card>
+                    <x-card>
                         <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mb-4">
                             &#9783;
                         </div>
                         <h3 class="font-semibold text-gray-900">Table Management</h3>
                         <p class="text-sm text-gray-500 mt-2">Visual table layout with real-time status tracking. See which tables are occupied, available, or have pending orders.</p>
-                    </div>
+                    </x-card>
                 </div>
             </div>
         </section>

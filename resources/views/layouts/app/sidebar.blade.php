@@ -35,9 +35,15 @@
                         ['Test Drawing', '#', false],
                     ] as [$label, $href, $active])
                         <a href="{{ $href }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ $active ? 'bg-indigo-500' : '' }}" @if($href !== '#') wire:navigate @endif>
-                            <span class="w-4 h-4 inline-block opacity-80">
-                                @if($label === 'Dashboard') &#9632; @elseif($label === 'Orders') &#9776; @elseif($label === 'POS') &#9635; @elseif($label === 'Welcome') &#8962; @else &#9998; @endif
-                            </span>
+                            @if ($label === 'Orders')
+                                <flux:icon.document-text class="w-4 h-4 text-white opacity-80" />
+                            @elseif ($label === 'POS')
+                                <flux:icon.shopping-bag class="w-4 h-4 text-white opacity-80" />
+                            @elseif ($label === 'Test Drawing')
+                                <flux:icon.pencil class="w-4 h-4 text-white opacity-80" />
+                            @else
+                                <flux:icon.home class="w-4 h-4 text-white opacity-80" />
+                            @endif
                             {{ __($label) }}
                         </a>
                     @endforeach
@@ -45,7 +51,7 @@
                     {{-- Setup (expandable) --}}
                     <details class="group" open>
                         <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
-                            <span class="w-4 h-4 inline-block opacity-80">&#9881;</span>
+                            <flux:icon.cog-6-tooth class="w-4 h-4 text-white opacity-80" />
                             {{ __('Setup') }}
                             <span class="ml-auto text-xs opacity-70 group-open:rotate-90 transition-transform">&#9654;</span>
                         </summary>
@@ -62,7 +68,7 @@
                 <div class="border-t border-indigo-500">
                     <details class="group" open>
                         <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
-                            <span class="w-4 h-4 inline-block opacity-80">&#128100;</span>
+                            <flux:icon.user class="w-4 h-4 text-white opacity-80" />
                             {{ auth()->user()->name }}
                             <span class="ml-auto text-xs opacity-70 group-open:rotate-90 transition-transform">&#9654;</span>
                         </summary>
