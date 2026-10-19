@@ -56,7 +56,10 @@
                             <span class="ml-auto text-xs opacity-70 group-open:rotate-90 transition-transform">&#9654;</span>
                         </summary>
                         <div class="pl-8">
-                            @foreach (['Category', 'Item', 'Table', 'Table QR', 'Payment Method'] as $sub)
+                            <a href="{{ route('categories') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('categories') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                                {{ __('Category') }}
+                            </a>
+                            @foreach (['Item', 'Table', 'Table QR', 'Payment Method'] as $sub)
                                 <a href="#" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100">
                                     {{ __($sub) }}
                                 </a>
@@ -89,7 +92,7 @@
 
             {{-- Main content --}}
             <main class="flex-1 p-6 bg-gray-100">
-                <div class="bg-white rounded-lg shadow-sm p-6 min-h-full">
+                <div class="max-w-6xl mx-auto">
                     {{ $slot }}
                 </div>
             </main>

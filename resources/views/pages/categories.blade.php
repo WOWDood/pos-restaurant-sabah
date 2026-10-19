@@ -1,0 +1,177 @@
+<?php
+
+use App\Models\Category;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+new #[Title('Category Search')] class extends Component {
+    public string $search = '';
+    public string $code = '';
+    public string $description = '';
+    public int $sort_order = 0;
+    public ?int $editingId = null;
+    public bool $showModal = false;
+    public ?int $deleteId = null;
+
+    public function openCreate(): void
+    {
+        $this->reset(['code', 'description', 'sort_order', 'editingId']);
+        $this->sort_order = 0;
+        $this->showModal = true;
+    }
+
+    public function openEdit(int $id): void
+    {
+        $category = Category::findOrFail($id);
+        $this->editingId = $category->id;
+        $this->code = $category->code;
+        $this->description = $category->description;
+        $this->sort_order = $category->sort_order;
+        $this->showModal = true;
+    }
+
+    public function save(): void
+    {
+        $rules = [
+            'code' => 'required|string|max:50|unique:categories,code' . ($this->editingId ? ',' . $this->editingId : ''),
+            'description' => 'required|string|max:255',
+            'sort_order' => 'required|integer',
+        ];
+        $this->validate($rules);
+
+        if ($this->editingId) {
+            Category::findOrFail($this->editingId)->update([
+                'code' => $this->code,
+                'description' => $this->description,
+                'sort_order' => $this->sort_order,
+            ]);
+        } else {
+            Category::create([
+                'code' => $this->code,
+                'description' => $this->description,
+                'sort_order' => $this->sort_order,
+            ]);
+        }
+
+        $this->showModal = false;
+        $this->reset(['code', 'description', 'sort_order', 'editingId']);
+    }
+
+    public function confirmDelete(int $id): void
+    {
+        $this->deleteId = $id;
+    }
+
+    public function delete(): void
+    {
+        if ($this->deleteId) {
+            $category = Category::findOrFail($this->deleteId);
+            if ($category->items()->exists()) {
+                $this->addError('delete', 'Cannot delete a category that still has items.');
+                $this->deleteId = null;
+                return;
+            }
+            $category->delete();
+        }
+        $this->deleteId = null;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->deleteId = null;
+    }
+
+    public function getCategoriesProperty()
+    {
+        return Category::query()
+            ->when($this->search, fn ($q) => $q->where('code', 'like', "%{$this->search}%")
+                ->orWhere('description', 'like', "%{$this->search}%"))
+            ->orderBy('sort_order')
+            ->orderBy('code')
+            ->get();
+    }
+}; ?>
+
+<div class="space-y-4">
+        <h1 class="text-xl font-bold text-gray-900">Category Search</h1>
+
+        <x-card>
+            <div class="flex items-center gap-3 mb-4">
+                <input type="text" wire:model.live="search" placeholder="Search…" class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm" />
+                <button wire:click="openCreate" class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">+ Add</button>
+            </div>
+
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left px-3 py-2 font-medium text-gray-600">Code</th>
+                        <th class="text-left px-3 py-2 font-medium text-gray-600">Description</th>
+                        <th class="text-left px-3 py-2 font-medium text-gray-600">Sort Order</th>
+                        <th class="text-left px-3 py-2 font-medium text-gray-600">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($this->categories as $category)
+                        <tr class="border-t border-gray-100">
+                            <td class="px-3 py-2">{{ $category->code }}</td>
+                            <td class="px-3 py-2">{{ $category->description }}</td>
+                            <td class="px-3 py-2">{{ $category->sort_order }}</td>
+                            <td class="px-3 py-2">
+                                <button wire:click="openEdit({{ $category->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
+                                <button wire:click="confirmDelete({{ $category->id }})" class="text-red-600 hover:underline">Delete</button>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <p class="text-xs text-gray-500 mt-3">{{ $this->categories->count() }} records</p>
+        </x-card>
+    </div>
+
+    {{-- Add/Edit Modal --}}
+    @if ($showModal)
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold">{{ $editingId ? 'Edit Category' : 'Add Category' }}</h2>
+                    <button wire:click="$set('showModal', false)" class="text-gray-400 hover:text-gray-600">&times;</button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
+                        <input type="text" wire:model="code" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                        @error('code') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <input type="text" wire:model="description" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                        @error('description') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+                        <input type="number" wire:model="sort_order" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                        @error('sort_order') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button wire:click="$set('showModal', false)" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
+                    <button wire:click="save" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">{{ $editingId ? 'Update' : 'Add' }}</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Delete confirmation --}}
+    @if ($deleteId)
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
+                <p class="text-sm text-gray-700 mb-4">Delete this category?</p>
+                @error('delete') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
+                <div class="flex justify-end gap-2">
+                    <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
+                    <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>
+                </div>
+            </div>
+        </div>
+    @endif
+</div>

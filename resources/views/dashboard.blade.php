@@ -1,5 +1,5 @@
 <x-layouts::app :title="__('Dashboard')">
-    <div class="max-w-md">
+    <div class="max-w-xl">
         <x-card>
             <h1 class="text-xl font-bold text-gray-900 mb-4">Dashboard</h1>
             <div class="space-y-1">
