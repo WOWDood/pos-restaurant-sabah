@@ -1,94 +1,93 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:sidebar.header>
-                <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
-                <flux:sidebar.collapse class="lg:hidden" />
-            </flux:sidebar.header>
+    <body class="min-h-screen bg-gray-100 text-gray-900">
+        {{-- Top header bar --}}
+        <header class="h-12 bg-indigo-600 flex items-center px-4 text-white">
+            <span class="font-semibold text-sm">Livewire Shop</span>
+        </header>
 
-            <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
-            </flux:sidebar.nav>
+        <div class="flex min-h-[calc(100vh-3rem)]">
+            {{-- Left sidebar --}}
+            <aside class="w-60 bg-indigo-700 text-white flex flex-col">
+                <div class="px-4 py-3 font-semibold text-sm border-b border-indigo-500">
+                    Kedai Soto Banso
+                </div>
 
-            <flux:spacer />
+                <nav class="flex-1 py-2 text-sm">
+                    @php
+                        $navItem = function ($label, $href, $active = false, $icon = null) {
+                            $classes = 'flex items-center gap-2 px-4 py-2 hover:bg-indigo-600';
+                            if ($active) {
+                                $classes .= ' bg-indigo-500';
+                            }
+                            return [$classes, $href];
+                        };
+                    @endphp
 
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
+                    @foreach ([
+                        ['Welcome', '#', false],
+                        ['Dashboard', route('dashboard'), request()->routeIs('dashboard')],
+                        ['Orders', '#', false],
+                        ['POS', '#', false],
+                        ['Test Drawing', '#', false],
+                    ] as [$label, $href, $active])
+                        <a href="{{ $href }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ $active ? 'bg-indigo-500' : '' }}" @if($href !== '#') wire:navigate @endif>
+                            <span class="w-4 h-4 inline-block opacity-80">
+                                @if($label === 'Dashboard') &#9632; @elseif($label === 'Orders') &#9776; @elseif($label === 'POS') &#9635; @elseif($label === 'Welcome') &#8962; @else &#9998; @endif
+                            </span>
+                            {{ __($label) }}
+                        </a>
+                    @endforeach
 
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
-
-            <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
-        </flux:sidebar>
-
-        <!-- Mobile User Menu -->
-        <flux:header class="lg:hidden">
-            <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
-
-            <flux:spacer />
-
-            <flux:dropdown position="top" align="end">
-                <flux:profile
-                    :initials="auth()->user()->initials()"
-                    icon-trailing="chevron-down"
-                />
-
-                <flux:menu>
-                    <flux:menu.radio.group>
-                        <div class="p-0 text-sm font-normal">
-                            <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                                <flux:avatar
-                                    :name="auth()->user()->name"
-                                    :initials="auth()->user()->initials()"
-                                />
-
-                                <div class="grid flex-1 text-start text-sm leading-tight">
-                                    <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
-                                    <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
-                                </div>
-                            </div>
+                    {{-- Setup (expandable) --}}
+                    <details class="group" open>
+                        <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
+                            <span class="w-4 h-4 inline-block opacity-80">&#9881;</span>
+                            {{ __('Setup') }}
+                            <span class="ml-auto text-xs opacity-70 group-open:rotate-90 transition-transform">&#9654;</span>
+                        </summary>
+                        <div class="pl-8">
+                            @foreach (['Category', 'Item', 'Table', 'Table QR', 'Payment Method'] as $sub)
+                                <a href="#" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100">
+                                    {{ __($sub) }}
+                                </a>
+                            @endforeach
                         </div>
-                    </flux:menu.radio.group>
+                    </details>
+                </nav>
 
-                    <flux:menu.separator />
+                <div class="border-t border-indigo-500">
+                    <details class="group" open>
+                        <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
+                            <span class="w-4 h-4 inline-block opacity-80">&#128100;</span>
+                            {{ auth()->user()->name }}
+                            <span class="ml-auto text-xs opacity-70 group-open:rotate-90 transition-transform">&#9654;</span>
+                        </summary>
+                        <div class="pl-8">
+                            <a href="{{ route('profile') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('profile') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                                {{ __('Profile') }}
+                            </a>
+                            <form method="POST" action="{{ route('logout') }}" class="w-full">
+                                @csrf
+                                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100">
+                                    {{ __('Log Out') }}
+                                </button>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+            </aside>
 
-                    <flux:menu.radio.group>
-                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                            {{ __('Settings') }}
-                        </flux:menu.item>
-                    </flux:menu.radio.group>
-
-                    <flux:menu.separator />
-
-                    <form method="POST" action="{{ route('logout') }}" class="w-full">
-                        @csrf
-                        <flux:menu.item
-                            as="button"
-                            type="submit"
-                            icon="arrow-right-start-on-rectangle"
-                            class="w-full cursor-pointer"
-                            data-test="logout-button"
-                        >
-                            {{ __('Log out') }}
-                        </flux:menu.item>
-                    </form>
-                </flux:menu>
-            </flux:dropdown>
-        </flux:header>
-
-        {{ $slot }}
+            {{-- Main content --}}
+            <main class="flex-1 p-6 bg-gray-100">
+                <div class="bg-white rounded-lg shadow-sm p-6 min-h-full">
+                    {{ $slot }}
+                </div>
+            </main>
+        </div>
 
         @persist('toast')
             <flux:toast.group>
