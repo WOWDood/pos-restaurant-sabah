@@ -59,7 +59,10 @@
                             <a href="{{ route('categories') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('categories') ? 'bg-indigo-500' : '' }}" wire:navigate>
                                 {{ __('Category') }}
                             </a>
-                            @foreach (['Item', 'Table', 'Table QR', 'Payment Method'] as $sub)
+                            <a href="{{ route('items') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('items') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                                {{ __('Item') }}
+                            </a>
+                            @foreach (['Table', 'Table QR', 'Payment Method'] as $sub)
                                 <a href="#" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100">
                                     {{ __($sub) }}
                                 </a>

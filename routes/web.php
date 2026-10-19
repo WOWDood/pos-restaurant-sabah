@@ -16,6 +16,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::livewire('profile', 'pages::profile')->name('profile');
     Route::livewire('setup/categories', 'pages::categories')->name('categories');
+    Route::livewire('setup/items', 'pages::items')->name('items');
 });
 
 require __DIR__.'/settings.php';
