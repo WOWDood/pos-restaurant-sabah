@@ -42,7 +42,7 @@ new #[Title('Payment Method Search')] class extends Component {
     {
         $this->validate([
             'description' => 'required|string|max:100',
-            'sort_order' => 'required|integer',
+            'sort_order' => 'required|integer|unique:payment_methods,sort_order' . ($this->editingId ? ',' . $this->editingId : ''),
         ]);
 
         $data = [

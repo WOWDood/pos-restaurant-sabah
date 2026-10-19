@@ -43,7 +43,7 @@ new #[Title('Category Search')] class extends Component {
         $rules = [
             'code' => 'required|string|max:50|unique:categories,code' . ($this->editingId ? ',' . $this->editingId : ''),
             'description' => 'required|string|max:255',
-            'sort_order' => 'required|integer',
+            'sort_order' => 'required|integer|unique:categories,sort_order' . ($this->editingId ? ',' . $this->editingId : ''),
         ];
         $this->validate($rules);
 

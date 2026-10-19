@@ -180,6 +180,7 @@ new #[Title('Item Search')] class extends Component {
             'newGroupName' => 'required|string|max:100',
             'newGroupMin' => 'required|integer|min:0',
             'newGroupMax' => 'required|integer|min:1',
+            'newGroupSort' => 'required|integer|unique:modifier_groups,sort_order,' . ($this->editingGroupId ?: 'NULL') . ',id,item_id,' . $this->modifierItemId,
         ]);
         $data = [
             'item_id' => $this->modifierItemId,
@@ -226,6 +227,7 @@ new #[Title('Item Search')] class extends Component {
         $this->validate([
             'newOptionGroupId' => 'required|exists:modifier_groups,id',
             'newOptionEn' => 'required|string|max:255',
+            'newOptionSort' => 'required|integer|unique:modifier_options,sort_order,' . ($this->editingOptionId ?: 'NULL') . ',id,modifier_group_id,' . $this->newOptionGroupId,
         ]);
         $data = [
             'modifier_group_id' => $this->newOptionGroupId,

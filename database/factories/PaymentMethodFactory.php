@@ -19,7 +19,7 @@ class PaymentMethodFactory extends Factory
     {
         return [
             'description' => $this->faker->word(),
-            'sort_order' => $this->faker->numberBetween(1, 10),
+            'sort_order' => $this->faker->unique()->numberBetween(1, 1000),
             'active' => true,
             'ref_required' => false,
         ];
