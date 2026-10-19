@@ -1,10 +1,13 @@
 <?php
 
 use App\Models\Category;
+use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Category Search')] class extends Component {
+    use WithPagination;
+
     public string $search = '';
     public string $code = '';
     public string $description = '';
@@ -12,6 +15,11 @@ new #[Title('Category Search')] class extends Component {
     public ?int $editingId = null;
     public bool $showModal = false;
     public ?int $deleteId = null;
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
 
     public function openCreate(): void
     {
@@ -88,90 +96,90 @@ new #[Title('Category Search')] class extends Component {
                 ->orWhere('description', 'like', "%{$this->search}%"))
             ->orderBy('sort_order')
             ->orderBy('code')
-            ->get();
+            ->paginate(10);
     }
 }; ?>
 
 <div class="space-y-4">
-        <h1 class="text-xl font-bold text-gray-900">Category Search</h1>
+    <h1 class="text-xl font-bold text-gray-900">Category Search</h1>
 
-        <x-card>
-            <div class="flex items-center gap-3 mb-4">
-                <input type="text" wire:model.live="search" placeholder="Search…" class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm" />
-                <button wire:click="openCreate" class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">+ Add</button>
-            </div>
+    <x-card>
+        <div class="flex items-center gap-3 mb-4">
+            <input type="text" wire:model.live="search" placeholder="Search…" class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm" />
+            <button wire:click="openCreate" class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">+ Add</button>
+        </div>
 
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="text-left px-3 py-2 font-medium text-gray-600">Code</th>
-                        <th class="text-left px-3 py-2 font-medium text-gray-600">Description</th>
-                        <th class="text-left px-3 py-2 font-medium text-gray-600">Sort Order</th>
-                        <th class="text-left px-3 py-2 font-medium text-gray-600">Action</th>
+        <x-table>
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="text-left px-3 py-2 font-medium text-gray-600">Code</th>
+                    <th class="text-left px-3 py-2 font-medium text-gray-600">Description</th>
+                    <th class="text-left px-3 py-2 font-medium text-gray-600">Sort Order</th>
+                    <th class="text-left px-3 py-2 font-medium text-gray-600">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($this->categories as $category)
+                    <tr class="border-t border-gray-100">
+                        <td class="px-3 py-2">{{ $category->code }}</td>
+                        <td class="px-3 py-2">{{ $category->description }}</td>
+                        <td class="px-3 py-2">{{ $category->sort_order }}</td>
+                        <td class="px-3 py-2">
+                            <button wire:click="openEdit({{ $category->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
+                            <button wire:click="confirmDelete({{ $category->id }})" class="text-red-600 hover:underline">Delete</button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach ($this->categories as $category)
-                        <tr class="border-t border-gray-100">
-                            <td class="px-3 py-2">{{ $category->code }}</td>
-                            <td class="px-3 py-2">{{ $category->description }}</td>
-                            <td class="px-3 py-2">{{ $category->sort_order }}</td>
-                            <td class="px-3 py-2">
-                                <button wire:click="openEdit({{ $category->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
-                                <button wire:click="confirmDelete({{ $category->id }})" class="text-red-600 hover:underline">Delete</button>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            <p class="text-xs text-gray-500 mt-3">{{ $this->categories->count() }} records</p>
-        </x-card>
-    </div>
+                @endforeach
+            </tbody>
+        </x-table>
 
-    {{-- Add/Edit Modal --}}
-    @if ($showModal)
-        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold">{{ $editingId ? 'Edit Category' : 'Add Category' }}</h2>
-                    <button wire:click="$set('showModal', false)" class="text-gray-400 hover:text-gray-600">&times;</button>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
-                        <input type="text" wire:model="code" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                        @error('code') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <input type="text" wire:model="description" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                        @error('description') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
-                        <input type="number" wire:model="sort_order" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                        @error('sort_order') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-                    </div>
-                </div>
-                <div class="mt-5 flex justify-end gap-2">
-                    <button wire:click="$set('showModal', false)" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-                    <button wire:click="save" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">{{ $editingId ? 'Update' : 'Add' }}</button>
-                </div>
+        <div class="flex items-center justify-between mt-4 text-sm text-gray-600">
+            <span>{{ $this->categories->total() }} records | Page {{ $this->categories->currentPage() }} of {{ $this->categories->lastPage() }}</span>
+            <div class="flex gap-2">
+                @if ($this->categories->onFirstPage())
+                    <button class="px-3 py-1 border border-gray-200 rounded text-gray-400" disabled>Previous</button>
+                @else
+                    <button wire:click="previousPage" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">Previous</button>
+                @endif
+                @if ($this->categories->hasMorePages())
+                    <button wire:click="nextPage" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50">Next</button>
+                @else
+                    <button class="px-3 py-1 border border-gray-200 rounded text-gray-400" disabled>Next</button>
+                @endif
             </div>
         </div>
-    @endif
+    </x-card>
 
-    {{-- Delete confirmation --}}
-    @if ($deleteId)
-        <div class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
-                <p class="text-sm text-gray-700 mb-4">Delete this category?</p>
-                @error('delete') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
-                <div class="flex justify-end gap-2">
-                    <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-                    <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>
-                </div>
+    <x-modal :show="$showModal" title="{{ $editingId ? 'Edit Category' : 'Add Category' }}" close="$set('showModal', false)">
+        <div class="space-y-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
+                <input type="text" wire:model="code" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                @error('code') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input type="text" wire:model="description" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                @error('description') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+                <input type="number" wire:model="sort_order" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                @error('sort_order') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
-    @endif
+        <div class="mt-5 flex justify-end gap-2">
+            <button wire:click="$set('showModal', false)" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
+            <button wire:click="save" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">{{ $editingId ? 'Update' : 'Add' }}</button>
+        </div>
+    </x-modal>
+
+    <x-modal :show="(bool) $deleteId" title="Delete Category" close="$set('deleteId', null)">
+        <p class="text-sm text-gray-700 mb-4">Delete this category?</p>
+        @error('delete') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
+        <div class="flex justify-end gap-2">
+            <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
+            <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>
+        </div>
+    </x-modal>
 </div>
