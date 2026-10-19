@@ -5,13 +5,13 @@
     </head>
     <body class="min-h-screen bg-gray-100 text-gray-900">
         {{-- Top header bar --}}
-        <header class="h-12 bg-indigo-600 flex items-center px-4 text-white print:hidden">
+        <header class="h-12 bg-indigo-600 flex items-center px-4 text-white print:hidden sticky top-0 z-40">
             <span class="font-semibold text-sm">Livewire Shop</span>
         </header>
 
         <div class="flex min-h-[calc(100vh-3rem)] print:block">
             {{-- Left sidebar --}}
-            <aside class="w-60 bg-indigo-700 text-white flex flex-col print:hidden">
+            <aside class="w-60 bg-indigo-700 text-white flex flex-col print:hidden sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto">
                 <div class="px-4 py-3 font-semibold text-sm border-b border-indigo-500">
                     Kedai Soto Banso
                 </div>
