@@ -19,6 +19,7 @@ Route::middleware(['auth'])->group(function () {
     Route::livewire('setup/items', 'pages::items')->name('items');
     Route::livewire('setup/tables', 'pages::tables')->name('tables');
     Route::livewire('setup/table-qr', 'pages::table-qr')->name('table-qr');
+    Route::livewire('setup/payment-methods', 'pages::payment-methods')->name('payment-methods');
 });
 
 require __DIR__.'/settings.php';

@@ -68,11 +68,9 @@
                             <a href="{{ route('table-qr') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('table-qr') ? 'bg-indigo-500' : '' }}" wire:navigate>
                                 {{ __('Table QR') }}
                             </a>
-                            @foreach (['Payment Method'] as $sub)
-                                <a href="#" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100">
-                                    {{ __($sub) }}
-                                </a>
-                            @endforeach
+                            <a href="{{ route('payment-methods') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('payment-methods') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                                {{ __('Payment Method') }}
+                            </a>
                         </div>
                     </details>
                 </nav>
