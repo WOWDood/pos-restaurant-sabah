@@ -28,7 +28,7 @@
                     @endphp
 
                     @foreach ([
-                        ['Welcome', '#', false],
+                        ['Welcome', route('home'), request()->routeIs('home')],
                         ['Dashboard', route('dashboard'), request()->routeIs('dashboard')],
                         ['Orders', '#', false],
                         ['POS', '#', false],
