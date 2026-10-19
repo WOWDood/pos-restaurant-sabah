@@ -11,6 +11,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return view('dashboard', compact('settings'));
     })->name('dashboard');
+
+    Route::livewire('pos', 'pages::pos')->name('pos');
+    Route::livewire('pos/order/{order}', 'pages::pos-order')->name('pos.order');
+    Route::livewire('orders', 'pages::orders')->name('orders');
 });
 
 Route::middleware(['auth'])->group(function () {

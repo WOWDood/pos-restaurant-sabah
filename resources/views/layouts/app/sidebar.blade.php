@@ -30,8 +30,8 @@
                     @foreach ([
                         ['Welcome', route('home'), request()->routeIs('home')],
                         ['Dashboard', route('dashboard'), request()->routeIs('dashboard')],
-                        ['Orders', '#', false],
-                        ['POS', '#', false],
+                        ['Orders', route('orders'), request()->routeIs('orders')],
+                        ['POS', route('pos'), request()->routeIs('pos')],
                         ['Test Drawing', '#', false],
                     ] as [$label, $href, $active])
                         <a href="{{ $href }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ $active ? 'bg-indigo-500' : '' }}" @if($href !== '#') wire:navigate @endif>
