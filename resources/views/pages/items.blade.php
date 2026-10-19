@@ -38,12 +38,14 @@ new #[Title('Item Search')] class extends Component {
     public int $newGroupMin = 0;
     public int $newGroupMax = 1;
     public int $newGroupSort = 0;
+    public ?int $editingGroupId = null;
     public ?int $newOptionGroupId = null;
     public string $newOptionEn = '';
     public string $newOptionZh = '';
     public float $newOptionPrice = 0;
     public int $newOptionSort = 0;
     public bool $newOptionBase = false;
+    public ?int $editingOptionId = null;
 
     public function updatingSearch(): void { $this->resetPage(); }
     public function updatingCategoryFilter(): void { $this->resetPage(); }
@@ -164,21 +166,43 @@ new #[Title('Item Search')] class extends Component {
         $this->showModifiersModal = true;
     }
 
-    public function addGroup(): void
+    public function saveGroup(): void
     {
         $this->validate([
             'newGroupName' => 'required|string|max:100',
             'newGroupMin' => 'required|integer|min:0',
             'newGroupMax' => 'required|integer|min:1',
         ]);
-        ModifierGroup::create([
+        $data = [
             'item_id' => $this->modifierItemId,
             'name' => $this->newGroupName,
             'min_select' => $this->newGroupMin,
             'max_select' => $this->newGroupMax,
             'sort_order' => $this->newGroupSort,
-        ]);
-        $this->reset(['newGroupName', 'newGroupMin', 'newGroupMax', 'newGroupSort']);
+        ];
+        if ($this->editingGroupId) {
+            ModifierGroup::findOrFail($this->editingGroupId)->update($data);
+        } else {
+            ModifierGroup::create($data);
+        }
+        $this->reset(['newGroupName', 'newGroupMin', 'newGroupMax', 'newGroupSort', 'editingGroupId']);
+        $this->newGroupMin = 0;
+        $this->newGroupMax = 1;
+    }
+
+    public function openEditGroup(int $id): void
+    {
+        $g = ModifierGroup::findOrFail($id);
+        $this->editingGroupId = $g->id;
+        $this->newGroupName = $g->name;
+        $this->newGroupMin = $g->min_select;
+        $this->newGroupMax = $g->max_select;
+        $this->newGroupSort = $g->sort_order;
+    }
+
+    public function cancelEditGroup(): void
+    {
+        $this->reset(['newGroupName', 'newGroupMin', 'newGroupMax', 'newGroupSort', 'editingGroupId']);
         $this->newGroupMin = 0;
         $this->newGroupMax = 1;
     }
@@ -188,22 +212,51 @@ new #[Title('Item Search')] class extends Component {
         ModifierGroup::findOrFail($id)->delete();
     }
 
-    public function addOption(): void
+    public function saveOption(): void
     {
         $this->validate([
             'newOptionGroupId' => 'required|exists:modifier_groups,id',
             'newOptionEn' => 'required|string|max:255',
         ]);
-        ModifierOption::create([
+        $data = [
             'modifier_group_id' => $this->newOptionGroupId,
             'name_en' => $this->newOptionEn,
             'name_zh' => $this->newOptionZh ?: null,
             'price_adjustment' => $this->newOptionPrice,
             'is_base' => $this->newOptionBase,
             'sort_order' => $this->newOptionSort,
-        ]);
-        $this->reset(['newOptionEn', 'newOptionZh', 'newOptionPrice', 'newOptionSort', 'newOptionBase']);
+        ];
+        if ($this->editingOptionId) {
+            ModifierOption::findOrFail($this->editingOptionId)->update($data);
+        } else {
+            ModifierOption::create($data);
+        }
+        $this->reset(['newOptionEn', 'newOptionZh', 'newOptionPrice', 'newOptionSort', 'newOptionBase', 'editingOptionId']);
         $this->newOptionPrice = 0;
+    }
+
+    public function openEditOption(int $id): void
+    {
+        $o = ModifierOption::findOrFail($id);
+        $this->editingOptionId = $o->id;
+        $this->newOptionGroupId = $o->modifier_group_id;
+        $this->newOptionEn = $o->name_en;
+        $this->newOptionZh = $o->name_zh ?? '';
+        $this->newOptionPrice = (float) $o->price_adjustment;
+        $this->newOptionSort = $o->sort_order;
+        $this->newOptionBase = (bool) $o->is_base;
+    }
+
+    public function cancelEditOption(): void
+    {
+        $this->reset(['newOptionEn', 'newOptionZh', 'newOptionPrice', 'newOptionSort', 'newOptionBase', 'editingOptionId']);
+        $this->newOptionPrice = 0;
+    }
+
+    public function saveOptionForGroup(int $groupId): void
+    {
+        $this->newOptionGroupId = $groupId;
+        $this->saveOption();
     }
 
     public function deleteOption(int $id): void
@@ -369,19 +422,22 @@ new #[Title('Item Search')] class extends Component {
             <div class="space-y-3">
                 <form wire:submit.prevent="uploadPhotos" class="space-y-2">
                     <input type="file" wire:model="photoFiles" multiple accept="image/*" class="text-sm" />
+                    <div wire:loading wire:target="photoFiles" class="text-xs text-gray-500">Uploading...</div>
+                    @error('photoFiles') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                     @error('photoFiles.*') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                     <button type="submit" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded">Upload</button>
                 </form>
                 <div class="grid grid-cols-2 gap-3">
                     @foreach ($this->photoItem->photos as $photo)
-                        <div class="border border-gray-200 rounded p-2 text-center">
+                        <div class="border border-gray-200 rounded p-2">
                             <img src="{{ \Illuminate\Support\Facades\Storage::url($photo->path) }}" class="w-full h-24 object-cover rounded mb-1" alt="" />
-                            @if ($photo->is_primary)
-                                <span class="text-xs text-blue-600 font-medium">Primary</span>
-                            @else
-                                <button wire:click="setPrimaryPhoto({{ $photo->id }})" class="text-xs text-gray-500 hover:underline">Set primary</button>
-                            @endif
-                            <div>
+                            <p class="text-xs text-gray-500 truncate mb-1">{{ basename($photo->path) }}</p>
+                            <div class="flex items-center justify-between">
+                                @if ($photo->is_primary)
+                                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">Primary</span>
+                                @else
+                                    <button wire:click="setPrimaryPhoto({{ $photo->id }})" class="text-xs text-gray-600 hover:underline">Set Primary</button>
+                                @endif
                                 <button wire:click="deletePhoto({{ $photo->id }})" class="text-xs text-red-600 hover:underline">Delete</button>
                             </div>
                         </div>
@@ -395,51 +451,78 @@ new #[Title('Item Search')] class extends Component {
     <x-modal :show="$showModifiersModal" title="Modifier Groups" close="$set('showModifiersModal', false)">
         @if ($this->modifierItem)
             <div class="space-y-4">
-                <div class="border border-gray-200 rounded p-3">
-                    <h3 class="text-sm font-semibold mb-2">Add Group</h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" wire:model="newGroupName" placeholder="Group name" class="col-span-2 rounded border border-gray-300 px-2 py-1 text-sm" />
-                        <input type="number" wire:model="newGroupMin" placeholder="Min" class="rounded border border-gray-300 px-2 py-1 text-sm" />
-                        <input type="number" wire:model="newGroupMax" placeholder="Max" class="rounded border border-gray-300 px-2 py-1 text-sm" />
-                        <input type="number" wire:model="newGroupSort" placeholder="Sort" class="rounded border border-gray-300 px-2 py-1 text-sm" />
+                <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h3 class="text-sm font-semibold mb-2">{{ $editingGroupId ? 'Edit Group' : '+ Add Group' }}</h3>
+                    <div class="space-y-2">
+                        <input type="text" wire:model="newGroupName" placeholder="Group name" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Minimum choices</label>
+                                <input type="number" wire:model="newGroupMin" min="0" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Maximum choices</label>
+                                <input type="number" wire:model="newGroupMax" min="1" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                            </div>
+                        </div>
+                        <input type="number" wire:model="newGroupSort" placeholder="Sort order" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                        <p class="text-xs text-gray-400">Set both to 1 for a required single choice.</p>
                     </div>
-                    <button wire:click="addGroup" class="mt-2 px-3 py-1 text-sm bg-indigo-600 text-white rounded">+ Add Group</button>
+                    <div class="mt-3 flex gap-2">
+                        <button wire:click="saveGroup" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded">{{ $editingGroupId ? 'Update Group' : '+ Add Group' }}</button>
+                        @if ($editingGroupId)
+                            <button wire:click="cancelEditGroup" class="px-3 py-1 text-sm border border-gray-300 rounded">Cancel</button>
+                        @endif
+                    </div>
                     @error('newGroupName') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                @foreach ($this->modifierItem->modifierGroups as $group)
-                    <div class="border border-gray-200 rounded p-3">
+                @foreach ($this->modifierItem->modifierGroups->sortBy('sort_order') as $group)
+                    <div class="border border-gray-200 rounded-lg p-4">
                         <div class="flex items-center justify-between mb-2">
-                            <div>
+                            <div class="flex items-center gap-2">
                                 <span class="font-medium text-sm">{{ $group->name }}</span>
-                                <span class="text-xs text-red-600 ml-2">Required - Pick {{ $group->max_select }}</span>
+                                <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                                    Required: choose {{ $group->min_select === $group->max_select ? $group->max_select : $group->min_select . '-' . $group->max_select }}
+                                </span>
                             </div>
-                            <button wire:click="deleteGroup({{ $group->id }})" class="text-xs text-red-600 hover:underline">Delete</button>
+                            <div class="flex gap-2">
+                                <button wire:click="openEditGroup({{ $group->id }})" class="text-xs text-blue-600 hover:underline">Edit</button>
+                                <button wire:click="deleteGroup({{ $group->id }})" class="text-xs text-red-600 hover:underline">Delete</button>
+                            </div>
                         </div>
-                        <ul class="text-sm text-gray-600 mb-2">
-                            @foreach ($group->options as $opt)
-                                <li class="flex items-center justify-between py-0.5">
-                                    <span>{{ $opt->name_en }}@if($opt->name_zh) / {{ $opt->name_zh }}@endif</span>
-                                    <button wire:click="deleteOption({{ $opt->id }})" class="text-xs text-red-600 hover:underline">Delete</button>
-                                </li>
+
+                        <div class="space-y-1 mb-3">
+                            @foreach ($group->options->sortBy('sort_order') as $opt)
+                                <div class="flex items-center justify-between text-sm border-t border-gray-100 pt-1">
+                                    <div>
+                                        <span>{{ $opt->name_en }}</span>
+                                        @if ($opt->name_zh)
+                                            <span class="text-gray-400"> / {{ $opt->name_zh }}</span>
+                                        @endif
+                                        <span class="text-gray-500 ml-2">+RM{{ number_format((float)$opt->price_adjustment, 2) }}</span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button wire:click="openEditOption({{ $opt->id }})" class="text-xs text-blue-600 hover:underline">Edit</button>
+                                        <button wire:click="deleteOption({{ $opt->id }})" class="text-xs text-red-600 hover:underline">Delete</button>
+                                    </div>
+                                </div>
                             @endforeach
-                        </ul>
-                        <div class="grid grid-cols-3 gap-2 mt-2">
-                            <select wire:model="newOptionGroupId" class="col-span-3 rounded border border-gray-300 px-2 py-1 text-sm">
-                                <option value="">-- Select group --</option>
-                                @foreach ($this->modifierItem->modifierGroups as $g)
-                                    <option value="{{ $g->id }}">{{ $g->name }}</option>
-                                @endforeach
-                            </select>
-                            <input type="text" wire:model="newOptionEn" placeholder="Name (EN)" class="rounded border border-gray-300 px-2 py-1 text-sm" />
-                            <input type="text" wire:model="newOptionZh" placeholder="Name (ZH)" class="rounded border border-gray-300 px-2 py-1 text-sm" />
-                            <input type="number" step="0.01" wire:model="newOptionPrice" placeholder="Price adj" class="rounded border border-gray-300 px-2 py-1 text-sm" />
-                            <input type="number" wire:model="newOptionSort" placeholder="Sort" class="rounded border border-gray-300 px-2 py-1 text-sm" />
-                            <label class="flex items-center gap-1 text-xs">
-                                <input type="checkbox" wire:model="newOptionBase" /> Base
-                            </label>
                         </div>
-                        <button wire:click="addOption" class="mt-2 px-3 py-1 text-sm bg-green-600 text-white rounded">+ Add Option</button>
+
+                        <div class="border-t border-gray-200 pt-3">
+                            <p class="text-xs font-semibold text-gray-500 mb-2">+ Add Option (to this group)</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" wire:model="newOptionEn" placeholder="Name (EN)" class="rounded border border-gray-300 px-2 py-1 text-sm" />
+                                <input type="text" wire:model="newOptionZh" placeholder="Name (ZH)" class="rounded border border-gray-300 px-2 py-1 text-sm" />
+                                <input type="number" step="0.01" wire:model="newOptionPrice" placeholder="Price adj" class="rounded border border-gray-300 px-2 py-1 text-sm" />
+                                <input type="number" wire:model="newOptionSort" placeholder="Sort" class="rounded border border-gray-300 px-2 py-1 text-sm" />
+                                <label class="flex items-center gap-1 text-xs col-span-2">
+                                    <input type="checkbox" wire:model="newOptionBase" /> Base option
+                                </label>
+                            </div>
+                            <button wire:click="saveOptionForGroup({{ $group->id }})" class="mt-2 px-3 py-1 text-sm bg-green-600 text-white rounded">+ Add Option</button>
+                        </div>
                     </div>
                 @endforeach
             </div>

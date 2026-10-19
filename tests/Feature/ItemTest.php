@@ -70,7 +70,10 @@ it('can upload a photo', function () {
         ->set('photoFiles', [$file])
         ->call('uploadPhotos');
 
-    expect($item->photos()->count())->toBe(1);
+    $photo = $item->photos()->first();
+    expect($item->photos()->count())->toBe(1)
+        ->and($photo->is_primary)->toBeTrue();
+    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($photo->path);
 });
 
 it('can add a modifier group and option', function () {
@@ -81,7 +84,7 @@ it('can add a modifier group and option', function () {
         ->set('newGroupName', 'Toppings')
         ->set('newGroupMin', 0)
         ->set('newGroupMax', 1)
-        ->call('addGroup');
+        ->call('saveGroup');
 
     $group = \App\Models\ModifierGroup::where('item_id', $item->id)->first();
     expect($group)->not->toBeNull();
@@ -90,7 +93,7 @@ it('can add a modifier group and option', function () {
         ->set('modifierItemId', $item->id)
         ->set('newOptionGroupId', $group->id)
         ->set('newOptionEn', 'Cheese')
-        ->call('addOption');
+        ->call('saveOption');
 
     expect(\App\Models\ModifierOption::where('modifier_group_id', $group->id)->where('name_en', 'Cheese')->exists())->toBeTrue();
 });
