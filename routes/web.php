@@ -1,11 +1,16 @@
 <?php
 
+use App\Models\BusinessSetting;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', function () {
+        $settings = BusinessSetting::pluck('value', 'key');
+
+        return view('dashboard', compact('settings'));
+    })->name('dashboard');
 });
 
 Route::middleware(['auth'])->group(function () {
