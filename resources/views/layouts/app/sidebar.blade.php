@@ -5,18 +5,18 @@
     </head>
     <body class="min-h-screen bg-gray-100 text-gray-900">
         {{-- Top header bar --}}
-        <header class="h-12 bg-indigo-600 flex items-center px-4 text-white print:hidden sticky top-0 z-40">
+        <header class="fixed top-0 left-0 right-0 h-12 bg-indigo-600 flex items-center px-4 text-white print:hidden z-50">
             <span class="font-semibold text-sm">Livewire Shop</span>
         </header>
 
-        <div class="flex min-h-[calc(100vh-3rem)] print:block">
+        <div class="flex min-h-screen print:block">
             {{-- Left sidebar --}}
-            <aside class="w-60 bg-indigo-700 text-white flex flex-col print:hidden sticky top-12 h-[calc(100vh-3rem)] overflow-y-auto">
+            <aside class="fixed top-12 left-0 bottom-0 w-60 bg-indigo-700 text-white flex flex-col print:hidden z-40 overflow-y-auto">
                 <div class="px-4 py-3 font-semibold text-sm border-b border-indigo-500">
                     Kedai Soto Banso
                 </div>
 
-                <nav class="flex-1 py-2 text-sm">
+                <nav class="flex-1 py-2 text-sm overflow-y-auto">
                     @php
                         $navItem = function ($label, $href, $active = false, $icon = null) {
                             $classes = 'flex items-center gap-2 px-4 py-2 hover:bg-indigo-600';
@@ -75,7 +75,7 @@
                     </details>
                 </nav>
 
-                <div class="border-t border-indigo-500">
+                <div class="border-t border-indigo-500 shrink-0">
                     <details class="group" open>
                         <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
                             <flux:icon.user class="w-4 h-4 text-white opacity-80" />
@@ -98,7 +98,7 @@
             </aside>
 
             {{-- Main content --}}
-            <main class="flex-1 p-6 bg-gray-100">
+            <main class="ml-60 mt-12 p-6 bg-gray-100 min-h-screen print:ml-0 print:mt-0">
                 <div class="max-w-6xl mx-auto">
                     {{ $slot }}
                 </div>

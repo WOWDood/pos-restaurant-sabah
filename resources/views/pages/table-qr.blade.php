@@ -17,6 +17,8 @@ new #[Title('Table QR Codes')] class extends Component {
         .qr-grid { grid-template-columns: repeat(2, 1fr) !important; }
         .qr-card { break-inside: avoid; page-break-inside: avoid; }
         .print-hidden { display: none !important; }
+        .printing-single .qr-card:not(.print-single) { display: none !important; }
+        .printing-single .qr-card.print-single { margin: 0 auto; }
     }
 </style>
 
@@ -26,7 +28,7 @@ new #[Title('Table QR Codes')] class extends Component {
             <h1 class="text-xl font-bold text-gray-900">Table QR Codes</h1>
             <p class="text-sm text-gray-500 mt-1">Print these QR codes and stick them on each table. Customers scan to open the ordering menu.</p>
         </div>
-        <button onclick="window.print()" class="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded print-hidden">Print All</button>
+        <button onclick="printAll()" class="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded print-hidden">Print All</button>
     </div>
 
     @php
@@ -37,7 +39,7 @@ new #[Title('Table QR Codes')] class extends Component {
         $writer = new \BaconQrCode\Writer($renderer);
     @endphp
 
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 qr-grid">
+    <div id="qr-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 qr-grid">
         @foreach ($this->tables as $table)
             @php
                 $url = url('/order/' . $table->id);
@@ -57,13 +59,26 @@ new #[Title('Table QR Codes')] class extends Component {
 
     <script>
         function printOne(id) {
+            const container = document.getElementById('qr-container');
             const card = document.getElementById('qr-card-' + id);
-            const w = window.open('', '_blank');
-            w.document.write('<html><head><title>QR</title></head><body>' + card.outerHTML + '</body></html>');
-            w.document.close();
-            w.focus();
-            w.print();
-            w.close();
+            container.classList.add('printing-single');
+            card.classList.add('print-single');
+            window.print();
+        }
+        window.addEventListener('afterprint', function () {
+            const container = document.getElementById('qr-container');
+            container.classList.remove('printing-single');
+            document.querySelectorAll('.qr-card.print-single').forEach(function (el) {
+                el.classList.remove('print-single');
+            });
+        });
+        function printAll() {
+            const container = document.getElementById('qr-container');
+            container.classList.remove('printing-single');
+            document.querySelectorAll('.qr-card.print-single').forEach(function (el) {
+                el.classList.remove('print-single');
+            });
+            window.print();
         }
     </script>
 </div>
