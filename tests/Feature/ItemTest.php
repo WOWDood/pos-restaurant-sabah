@@ -14,6 +14,16 @@ it('can view items page', function () {
     $this->get(route('items'))->assertOk();
 });
 
+it('does not leak modifier modal marker and modal is closed by default', function () {
+    $item = Item::factory()->create(['code' => 'ModTest', 'category_id' => $this->category->id]);
+
+    Livewire\Livewire::test('pages::items')
+        ->assertDontSee('__MODIFIER_MODAL_START__')
+        ->assertSet('showModifiersModal', false)
+        ->call('openModifiers', $item->id)
+        ->assertSet('showModifiersModal', true);
+});
+
 it('can create an item', function () {
     Livewire\Livewire::test('pages::items')
         ->set('code', 'B1')

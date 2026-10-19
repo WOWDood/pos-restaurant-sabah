@@ -476,7 +476,7 @@ new #[Title('Item Search')] class extends Component {
         @endif
     </x-modal>
 
-__MODIFIER_MODAL_START__
+    <x-modal :show="$showModifiersModal" title="Modifier Groups" close="$set('showModifiersModal', false)" wide>
         @if ($this->modifierItem)
             <div class="space-y-4">
                 @if (! $showGroupForm)
