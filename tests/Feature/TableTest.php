@@ -56,7 +56,8 @@ it('does not delete a table that has orders', function () {
     Livewire\Livewire::test('pages::tables')
         ->call('confirmDelete', $table->id)
         ->call('delete')
-        ->assertHasErrors('delete');
+        ->assertHasErrors('delete')
+        ->assertSet('deleteId', $table->id);
 
     expect(RestaurantTable::find($table->id))->not->toBeNull();
 });

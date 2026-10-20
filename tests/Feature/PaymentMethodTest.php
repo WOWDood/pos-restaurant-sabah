@@ -55,7 +55,8 @@ it('does not delete a payment method that has payments', function () {
     Livewire\Livewire::test('pages::payment-methods')
         ->call('confirmDelete', $pm->id)
         ->call('delete')
-        ->assertHasErrors('delete');
+        ->assertHasErrors('delete')
+        ->assertSet('deleteId', $pm->id);
 
     expect(PaymentMethod::find($pm->id))->not->toBeNull();
 });

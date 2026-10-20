@@ -98,7 +98,8 @@ it('does not delete an item that is used in an order', function () {
     Livewire\Livewire::test('pages::items')
         ->call('confirmDelete', $item->id)
         ->call('delete')
-        ->assertHasErrors('delete');
+        ->assertHasErrors('delete')
+        ->assertSet('deleteId', $item->id);
 
     expect(Item::find($item->id))->not->toBeNull();
 });

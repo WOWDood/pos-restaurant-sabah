@@ -53,7 +53,7 @@ new #[Title('Table Search')] class extends Component {
             $t = RestaurantTable::findOrFail($this->deleteId);
             if ($t->orders()->exists()) {
                 $this->addError('delete', 'Cannot delete a table that has orders.');
-                $this->deleteId = null;
+
                 return;
             }
             $t->delete();

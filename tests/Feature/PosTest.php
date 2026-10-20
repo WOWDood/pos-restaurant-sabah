@@ -259,6 +259,9 @@ it('rejects editing or removing lines on paid or cancelled orders', function (st
     ]);
 
     $component = Livewire::test('pages::pos-order', ['order' => $order])
+        ->assertDontSee('+ Add Item')
+        ->assertDontSee('Edit')
+        ->assertDontSee('Remove')
         ->call('editLine', $line->id)
         ->assertHasErrors('order')
         ->call('confirmRemove', $line->id)

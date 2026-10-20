@@ -70,7 +70,7 @@ new #[Title('Payment Method Search')] class extends Component {
             $pm = PaymentMethod::findOrFail($this->deleteId);
             if ($pm->payments()->exists()) {
                 $this->addError('delete', 'Cannot delete a payment method that has payments.');
-                $this->deleteId = null;
+
                 return;
             }
             $pm->delete();

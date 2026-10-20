@@ -116,7 +116,7 @@ new #[Title('Item Search')] class extends Component {
             $item = Item::findOrFail($this->deleteId);
             if ($item->orderItems()->exists()) {
                 $this->addError('delete', 'Cannot delete an item that is used in orders.');
-                $this->deleteId = null;
+
                 return;
             }
             $item->delete();
