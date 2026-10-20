@@ -34,7 +34,7 @@
                         ['POS', route('pos'), request()->routeIs('pos')],
                         ['Test Drawing', '#', false],
                     ] as [$label, $href, $active])
-                        <a href="{{ $href }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ $active ? 'bg-indigo-500' : '' }}" @if($href !== '#') wire:navigate @endif>
+                        <a href="{{ $href }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ $active ? 'bg-indigo-500' : '' }}" @if($href !== '#' && $label !== 'Orders') wire:navigate @endif>
                             @if ($label === 'Orders')
                                 <flux:icon.document-text class="w-4 h-4 text-white opacity-80" />
                             @elseif ($label === 'POS')

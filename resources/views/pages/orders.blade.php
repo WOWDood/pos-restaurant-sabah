@@ -83,7 +83,9 @@ new #[Title('Orders')] class extends Component {
                     <flux:icon.funnel class="w-4 h-4" />
                     Filtered by table: {{ $table }}
                 </span>
-                <button wire:click="clearTableFilter" class="text-indigo-500 hover:text-indigo-800 text-lg leading-none" title="Clear filter">&times;</button>
+                <button wire:click="clearTableFilter" class="text-indigo-700 hover:text-indigo-900 font-medium underline">
+                    Show all orders
+                </button>
             </div>
         @endif
 

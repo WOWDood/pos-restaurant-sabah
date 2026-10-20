@@ -563,28 +563,26 @@ new #[Title('POS / Cashier')] class extends Component {
                             </div>
                             <div class="space-y-2">
                                 @foreach ($group->options as $option)
-                                    <label class="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-md px-3 py-2 text-sm cursor-pointer hover:border-indigo-300">
-                                        <span class="flex items-center gap-2">
-                                            @if ($group->max_select === 1)
-                                                <input
-                                                    type="radio"
-                                                    name="modifier-group-{{ $group->id }}"
-                                                    value="{{ $option->id }}"
-                                                    wire:model.live="selections.{{ $group->id }}"
-                                                    class="text-indigo-600"
-                                                />
-                                            @else
-                                                <input
-                                                    type="checkbox"
-                                                    value="{{ $option->id }}"
-                                                    wire:model.live="selections.{{ $group->id }}"
-                                                    class="rounded text-indigo-600"
-                                                />
-                                            @endif
-                                            <span class="text-gray-800">{{ $option->name_en }}@if ($option->name_zh) / {{ $option->name_zh }}@endif</span>
-                                        </span>
+                                    <label class="inline-flex items-center justify-between gap-3 rounded-full border px-3 py-2 text-sm cursor-pointer transition {{ in_array((int) $option->id, $this->selectedOptionIds($group), true) ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-200 bg-white text-gray-800 hover:border-indigo-300' }}">
+                                        @if ($group->max_select === 1)
+                                            <input
+                                                type="radio"
+                                                name="modifier-group-{{ $group->id }}"
+                                                value="{{ $option->id }}"
+                                                wire:model.live="selections.{{ $group->id }}"
+                                                class="sr-only"
+                                            />
+                                        @else
+                                            <input
+                                                type="checkbox"
+                                                value="{{ $option->id }}"
+                                                wire:model.live="selections.{{ $group->id }}"
+                                                class="sr-only"
+                                            />
+                                        @endif
+                                        <span>{{ $option->name_en }}@if ($option->name_zh) / {{ $option->name_zh }}@endif</span>
                                         @if ((float) $option->price_adjustment !== 0.0)
-                                            <span class="text-xs text-gray-500 whitespace-nowrap">
+                                            <span class="text-xs whitespace-nowrap {{ in_array((int) $option->id, $this->selectedOptionIds($group), true) ? 'text-indigo-100' : 'text-gray-500' }}">
                                                 {{ (float) $option->price_adjustment > 0 ? '+' : '-' }}RM{{ number_format(abs((float) $option->price_adjustment), 2) }}
                                             </span>
                                         @endif
