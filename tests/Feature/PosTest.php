@@ -181,6 +181,93 @@ it('rejects adding items to paid or cancelled orders', function (string $status)
     expect(OrderItem::count())->toBe(0);
 })->with([Order::STATUS_PAID, Order::STATUS_CANCELLED]);
 
+it('edits an order line and recalculates the total', function () {
+    $order = newPosOrder($this->user, $this->table);
+    $item = Item::factory()->create([
+        'category_id' => $this->category->id,
+        'code' => 'A2',
+        'description' => 'Meehun goreng',
+        'unit_price' => 8,
+        'active' => true,
+    ]);
+
+    Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openAddItemModal')
+        ->call('selectItem', $item->id)
+        ->call('addToOrder');
+
+    $line = OrderItem::first();
+
+    Livewire::test('pages::pos-order', ['order' => $order->fresh()])
+        ->call('editLine', $line->id)
+        ->assertSet('addTab', 'selected')
+        ->assertSet('selectedItemId', $item->id)
+        ->set('quantity', 3)
+        ->set('notes', 'Extra spicy')
+        ->call('addToOrder')
+        ->assertHasNoErrors();
+
+    $line->refresh();
+
+    expect(OrderItem::count())->toBe(1)
+        ->and($line->quantity)->toBe(3)
+        ->and((float) $line->subtotal)->toBe(24.0)
+        ->and($line->notes)->toBe('Extra spicy')
+        ->and((float) $order->fresh()->total)->toBe(24.0);
+});
+
+it('removes an order line and recalculates the total', function () {
+    $order = newPosOrder($this->user, $this->table);
+    $first = Item::factory()->create(['category_id' => $this->category->id, 'unit_price' => 8, 'active' => true]);
+    $second = Item::factory()->create(['category_id' => $this->category->id, 'unit_price' => 11, 'active' => true]);
+
+    $component = Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openAddItemModal')
+        ->call('selectItem', $first->id)
+        ->call('addToOrder')
+        ->call('openAddItemModal')
+        ->call('selectItem', $second->id)
+        ->call('addToOrder');
+
+    expect((float) $order->fresh()->total)->toBe(19.0)
+        ->and(OrderItem::count())->toBe(2);
+
+    $lineToRemove = OrderItem::where('item_id', $first->id)->first();
+
+    $component
+        ->call('confirmRemove', $lineToRemove->id)
+        ->assertSet('removingLineId', $lineToRemove->id)
+        ->call('removeLine')
+        ->assertSet('removingLineId', null);
+
+    expect(OrderItem::count())->toBe(1)
+        ->and(OrderItem::where('item_id', $first->id)->exists())->toBeFalse()
+        ->and((float) $order->fresh()->total)->toBe(11.0);
+});
+
+it('rejects editing or removing lines on paid or cancelled orders', function (string $status) {
+    $order = newPosOrder($this->user, $this->table, $status);
+    $item = Item::factory()->create(['category_id' => $this->category->id, 'unit_price' => 8, 'active' => true]);
+    $line = OrderItem::create([
+        'order_id' => $order->id,
+        'item_id' => $item->id,
+        'item_code' => $item->code,
+        'item_description' => $item->description,
+        'quantity' => 1,
+        'unit_price' => 8,
+        'subtotal' => 8,
+    ]);
+
+    $component = Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('editLine', $line->id)
+        ->assertHasErrors('order')
+        ->call('confirmRemove', $line->id)
+        ->assertHasErrors('order');
+
+    expect(OrderItem::find($line->id))->not->toBeNull()
+        ->and((float) $order->fresh()->total)->toBe(0.0);
+})->with([Order::STATUS_PAID, Order::STATUS_CANCELLED]);
+
 it('adds a combo item with both groups end to end', function () {
     $order = newPosOrder($this->user, $this->table);
     $combo = Item::factory()->create([

@@ -27,6 +27,10 @@ new #[Title('POS / Cashier')] class extends Component {
     /** @var array<int, int|string|array<int, int|string>> */
     public array $selections = [];
 
+    public ?int $editingLineId = null;
+
+    public ?int $removingLineId = null;
+
     public function mount(Order $order): void
     {
         $this->order = $order->load('table', 'items');
@@ -156,6 +160,80 @@ new #[Title('POS / Cashier')] class extends Component {
         $this->resetValidation();
     }
 
+    public function editLine(int $lineId): void
+    {
+        if (! $this->ensureEditable()) {
+            return;
+        }
+
+        $line = $this->order->items()->findOrFail($lineId);
+        $item = Item::query()
+            ->with('modifierGroups.options')
+            ->find($line->item_id);
+
+        if (! $item) {
+            $this->addError('order', 'The item on this line is no longer available.');
+
+            return;
+        }
+
+        $this->resetValidation();
+        $this->editingLineId = $line->id;
+        $this->selectedItemId = $item->id;
+        $this->quantity = $line->quantity;
+        $this->notes = $line->notes ?? '';
+        $this->selections = [];
+
+        $modifiersByGroup = collect($line->modifiers ?? [])->groupBy('group_id');
+
+        foreach ($item->modifierGroups as $group) {
+            $optionIds = $modifiersByGroup->get($group->id, collect())
+                ->pluck('option_id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+
+            $this->selections[$group->id] = $group->max_select === 1
+                ? ($optionIds[0] ?? null)
+                : $optionIds;
+        }
+
+        $this->addTab = 'selected';
+        $this->showAddItemModal = true;
+    }
+
+    public function confirmRemove(int $lineId): void
+    {
+        if (! $this->ensureEditable()) {
+            return;
+        }
+
+        $this->order->items()->findOrFail($lineId);
+        $this->removingLineId = $lineId;
+    }
+
+    public function cancelRemove(): void
+    {
+        $this->removingLineId = null;
+    }
+
+    public function removeLine(): void
+    {
+        if (! $this->ensureEditable()) {
+            return;
+        }
+
+        if (! $this->removingLineId) {
+            return;
+        }
+
+        $line = $this->order->items()->findOrFail($this->removingLineId);
+        $line->delete();
+
+        $this->removingLineId = null;
+        $this->recalculateTotal();
+    }
+
     public function addToOrder(): void
     {
         if (! $this->ensureEditable()) {
@@ -168,10 +246,15 @@ new #[Title('POS / Cashier')] class extends Component {
             'notes' => 'nullable|string|max:255',
         ]);
 
-        $item = Item::query()
-            ->where('active', true)
+        $itemQuery = Item::query()
             ->with('modifierGroups.options')
-            ->find($this->selectedItemId);
+            ->whereKey($this->selectedItemId);
+
+        if (! $this->editingLineId) {
+            $itemQuery->where('active', true);
+        }
+
+        $item = $itemQuery->first();
 
         if (! $item) {
             $this->addError('selectedItemId', 'This item is no longer available.');
@@ -224,8 +307,7 @@ new #[Title('POS / Cashier')] class extends Component {
         $unitPrice = round($unitPrice, 2);
         $quantity = max(1, (int) $this->quantity);
 
-        OrderItem::create([
-            'order_id' => $this->order->id,
+        $lineData = [
             'item_id' => $item->id,
             'item_code' => $item->code,
             'item_description' => $item->description,
@@ -234,11 +316,24 @@ new #[Title('POS / Cashier')] class extends Component {
             'subtotal' => round($unitPrice * $quantity, 2),
             'notes' => $this->notes ?: null,
             'modifiers' => $modifiers ?: null,
-        ]);
+        ];
+
+        $wasEditing = (bool) $this->editingLineId;
+
+        if ($wasEditing) {
+            $this->order->items()->findOrFail($this->editingLineId)->update($lineData);
+        } else {
+            $this->order->items()->create($lineData);
+        }
 
         $this->recalculateTotal();
         $this->resetAddItemForm();
-        $this->addTab = 'search';
+
+        if ($wasEditing) {
+            $this->showAddItemModal = false;
+        } else {
+            $this->addTab = 'search';
+        }
     }
 
     public function recalculateTotal(): void
@@ -275,7 +370,7 @@ new #[Title('POS / Cashier')] class extends Component {
 
     private function resetAddItemForm(): void
     {
-        $this->reset(['selectedItemId', 'quantity', 'notes', 'selections', 'itemSearch', 'categoryFilter']);
+        $this->reset(['selectedItemId', 'quantity', 'notes', 'selections', 'itemSearch', 'categoryFilter', 'editingLineId']);
         $this->quantity = 1;
         $this->addTab = 'search';
         $this->resetValidation();
@@ -305,26 +400,46 @@ new #[Title('POS / Cashier')] class extends Component {
                     <th class="text-left px-3 py-2">#</th>
                     <th class="text-left px-3 py-2">Item</th>
                     <th class="text-left px-3 py-2">Price</th>
+                    <th class="text-left px-3 py-2">Qty</th>
                     <th class="text-left px-3 py-2">Subtotal</th>
                     <th class="text-right px-3 py-2">Action</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($order->items as $i => $line)
-                    <tr class="border-t border-gray-100">
+                    <tr class="border-t border-gray-100 align-top">
                         <td class="px-3 py-2">{{ $i + 1 }}</td>
-                        <td class="px-3 py-2">{{ $line->item_description }}</td>
-                        <td class="px-3 py-2">RM{{ number_format((float) $line->unit_price, 2) }}</td>
-                        <td class="px-3 py-2">RM{{ number_format((float) $line->subtotal, 2) }}</td>
-                        <td class="px-3 py-2 text-right">
+                        <td class="px-3 py-2">
+                            <p class="font-medium text-gray-900">{{ $line->item_code }} - {{ $line->item_description }}</p>
+                            @if (! empty($line->modifiers))
+                                <div class="text-xs text-gray-500 mt-1 space-y-0.5">
+                                    @foreach (collect($line->modifiers)->groupBy('group_name') as $groupName => $modifiers)
+                                        <p>
+                                            <span class="font-medium">{{ $groupName }}:</span>
+                                            {{ $modifiers->map(fn ($modifier) => $modifier['name_en'] . (! empty($modifier['name_zh']) ? ' / ' . $modifier['name_zh'] : ''))->join(', ') }}
+                                        </p>
+                                    @endforeach
+                                </div>
+                            @endif
+                            @if ($line->notes)
+                                <p class="text-xs italic text-gray-500 mt-1">Note: {{ $line->notes }}</p>
+                            @endif
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap">RM{{ number_format((float) $line->unit_price, 2) }}</td>
+                        <td class="px-3 py-2">{{ $line->quantity }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">RM{{ number_format((float) $line->subtotal, 2) }}</td>
+                        <td class="px-3 py-2 text-right whitespace-nowrap">
                             @if ($this->canEdit)
-                                <span class="text-gray-400">Edit | Remove</span>
+                                <div class="flex items-center justify-end gap-2">
+                                    <button wire:click="editLine({{ $line->id }})" class="text-blue-600 hover:underline">Edit</button>
+                                    <button wire:click="confirmRemove({{ $line->id }})" class="text-red-600 hover:underline">Remove</button>
+                                </div>
                             @endif
                         </td>
                     </tr>
                 @empty
                     <tr class="border-t border-gray-100">
-                        <td colspan="5" class="px-3 py-6 text-center text-sm text-gray-500">No items yet.</td>
+                        <td colspan="6" class="px-3 py-6 text-center text-sm text-gray-500">No items yet.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -343,7 +458,7 @@ new #[Title('POS / Cashier')] class extends Component {
         </div>
     </x-card>
 
-    <x-modal :show="$showAddItemModal" title="Add Item" close="closeAddItemModal" wide>
+    <x-modal :show="$showAddItemModal" title="{{ $editingLineId ? 'Edit Item' : 'Add Item' }}" close="closeAddItemModal" wide>
         <div class="flex border-b border-gray-200 -mt-2 mb-5">
             <button
                 wire:click="setAddTab('search')"
@@ -499,7 +614,7 @@ new #[Title('POS / Cashier')] class extends Component {
                             @disabled(! $this->requiredGroupsSatisfied)
                             class="bg-indigo-600 text-white text-sm font-medium px-6 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Add to Order
+                            {{ $editingLineId ? 'Update Item' : 'Add to Order' }}
                         </button>
                     </div>
                 </div>
@@ -510,6 +625,15 @@ new #[Title('POS / Cashier')] class extends Component {
 
         <div class="flex justify-end border-t border-gray-200 mt-5 pt-4">
             <button wire:click="closeAddItemModal" class="px-5 py-2 text-sm border border-gray-300 rounded">Done</button>
+        </div>
+    </x-modal>
+
+    <x-modal :show="(bool) $removingLineId" title="Remove Item" close="cancelRemove">
+        <p class="text-sm text-gray-700 mb-4">Remove this item from the order?</p>
+        @error('order') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
+        <div class="flex justify-end gap-2">
+            <button wire:click="cancelRemove" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
+            <button wire:click="removeLine" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Remove</button>
         </div>
     </x-modal>
 </div>
