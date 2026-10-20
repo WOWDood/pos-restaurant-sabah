@@ -6,6 +6,8 @@ use App\Models\ModifierGroup;
 use App\Models\ModifierOption;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
+use App\Models\PaymentMethod;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use Livewire\Livewire;
@@ -322,4 +324,139 @@ it('adds a combo item with both groups end to end', function () {
         ->and(collect($line->modifiers)->pluck('group_name')->all())->toBe(['Drink', 'Main Dish'])
         ->and(collect($line->modifiers)->pluck('name_en')->all())->toBe(['D1 - Coffee', 'C1 - Nasi Goreng'])
         ->and((float) $line->unit_price)->toBe(20.0);
+});
+
+it('completes a payment and marks the order paid', function () {
+    $order = newPosOrder($this->user, $this->table);
+    $item = Item::factory()->create(['category_id' => $this->category->id, 'unit_price' => 12, 'active' => true]);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'item_id' => $item->id,
+        'item_code' => $item->code,
+        'item_description' => $item->description,
+        'quantity' => 1,
+        'unit_price' => 12,
+        'subtotal' => 12,
+    ]);
+    $order->update(['total' => 12]);
+    $method = PaymentMethod::factory()->create(['description' => 'Cash']);
+
+    Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openPaymentModal')
+        ->call('selectPaymentMethod', $method->id)
+        ->call('confirmPayment')
+        ->call('payNow')
+        ->assertHasNoErrors();
+
+    expect($order->fresh()->status)->toBe(Order::STATUS_PAID)
+        ->and((float) Payment::first()->amount)->toBe(12.0)
+        ->and((int) Payment::first()->payment_method_id)->toBe($method->id);
+});
+
+it('requires a reference for payment methods that need one', function () {
+    $order = newPosOrder($this->user, $this->table);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'item_code' => 'A1',
+        'item_description' => 'Mee Sup',
+        'quantity' => 1,
+        'unit_price' => 8,
+        'subtotal' => 8,
+    ]);
+    $method = PaymentMethod::factory()->create(['ref_required' => true]);
+
+    Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openPaymentModal')
+        ->call('selectPaymentMethod', $method->id)
+        ->call('confirmPayment')
+        ->assertHasErrors('paymentReference')
+        ->set('paymentReference', 'TXN-123')
+        ->call('confirmPayment')
+        ->call('payNow')
+        ->assertHasNoErrors();
+
+    expect(Payment::first()->reference)->toBe('TXN-123');
+});
+
+it('rejects inactive payment methods', function () {
+    $order = newPosOrder($this->user, $this->table);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'item_code' => 'A1',
+        'item_description' => 'Mee Sup',
+        'quantity' => 1,
+        'unit_price' => 8,
+        'subtotal' => 8,
+    ]);
+    $method = PaymentMethod::factory()->create(['active' => false]);
+
+    Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openPaymentModal')
+        ->set('selectedPaymentMethodId', $method->id)
+        ->call('confirmPayment')
+        ->assertHasErrors('payment');
+
+    expect(Payment::count())->toBe(0);
+});
+
+it('rejects a second payment for the same order', function () {
+    $order = newPosOrder($this->user, $this->table);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'item_code' => 'A1',
+        'item_description' => 'Mee Sup',
+        'quantity' => 1,
+        'unit_price' => 8,
+        'subtotal' => 8,
+    ]);
+    $method = PaymentMethod::factory()->create();
+    $component = Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openPaymentModal')
+        ->call('selectPaymentMethod', $method->id)
+        ->call('confirmPayment')
+        ->call('payNow');
+
+    $component->call('payNow')->assertHasErrors('payment');
+
+    expect(Payment::count())->toBe(1);
+});
+
+it('rejects payment for an empty order', function () {
+    $order = newPosOrder($this->user, $this->table);
+    $method = PaymentMethod::factory()->create();
+
+    Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openPaymentModal')
+        ->assertHasErrors('payment')
+        ->call('selectPaymentMethod', $method->id)
+        ->call('confirmPayment')
+        ->assertHasErrors('payment');
+
+    expect(Payment::count())->toBe(0);
+});
+
+it('recomputes the payment total from order items on the server', function () {
+    $order = newPosOrder($this->user, $this->table);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'item_code' => 'A1',
+        'item_description' => 'Mee Sup',
+        'quantity' => 1,
+        'unit_price' => 8,
+        'subtotal' => 8,
+    ]);
+    $order->update(['total' => 999]);
+    $method = PaymentMethod::factory()->create();
+
+    $component = Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openPaymentModal');
+    $order->update(['total' => 0]);
+
+    $component
+        ->call('selectPaymentMethod', $method->id)
+        ->call('confirmPayment')
+        ->call('payNow');
+
+    expect((float) Payment::first()->amount)->toBe(8.0)
+        ->and((float) $order->fresh()->total)->toBe(8.0);
 });

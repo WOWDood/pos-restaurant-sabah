@@ -4,6 +4,9 @@ use App\Models\Category;
 use App\Models\Item;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
+use App\Models\PaymentMethod;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -30,6 +33,16 @@ new #[Title('POS / Cashier')] class extends Component {
     public ?int $editingLineId = null;
 
     public ?int $removingLineId = null;
+
+    public bool $showPaymentModal = false;
+
+    public bool $showConfirmPaymentModal = false;
+
+    public ?int $selectedPaymentMethodId = null;
+
+    public string $paymentReference = '';
+
+    public ?string $paymentSuccess = null;
 
     public function mount(Order $order): void
     {
@@ -343,6 +356,148 @@ new #[Title('POS / Cashier')] class extends Component {
         $this->order->refresh()->load('table', 'items');
     }
 
+    public function getPaymentMethodsProperty()
+    {
+        return PaymentMethod::query()
+            ->where('active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+    }
+
+    public function getSelectedPaymentMethodProperty(): ?PaymentMethod
+    {
+        return $this->selectedPaymentMethod();
+    }
+
+    public function openPaymentModal(): void
+    {
+        if (! $this->ensurePayable()) {
+            return;
+        }
+
+        $this->resetPaymentForm();
+        $this->showPaymentModal = true;
+    }
+
+    public function closePaymentModal(): void
+    {
+        $this->showPaymentModal = false;
+        $this->resetPaymentForm();
+    }
+
+    public function selectPaymentMethod(int $paymentMethodId): void
+    {
+        $method = PaymentMethod::query()
+            ->whereKey($paymentMethodId)
+            ->where('active', true)
+            ->first();
+
+        if (! $method) {
+            $this->addError('payment', 'This payment method is not available.');
+
+            return;
+        }
+
+        $this->selectedPaymentMethodId = $method->id;
+        $this->paymentReference = '';
+        $this->resetValidation();
+    }
+
+    public function confirmPayment(): void
+    {
+        if (! $this->ensurePayable()) {
+            return;
+        }
+
+        $method = $this->selectedPaymentMethod();
+
+        if (! $method) {
+            $this->addError('payment', 'Choose a payment method.');
+
+            return;
+        }
+
+        if ($method->ref_required && trim($this->paymentReference) === '') {
+            $this->addError('paymentReference', 'Reference is required for this payment method.');
+
+            return;
+        }
+
+        $this->resetValidation();
+        $this->showPaymentModal = false;
+        $this->showConfirmPaymentModal = true;
+    }
+
+    public function cancelConfirmPayment(): void
+    {
+        $this->showConfirmPaymentModal = false;
+        $this->showPaymentModal = true;
+    }
+
+    public function payNow(): void
+    {
+        $payment = DB::transaction(function (): ?Payment {
+            $order = Order::query()->lockForUpdate()->findOrFail($this->order->id);
+
+            if (! $order->isOpen()) {
+                $this->addError('payment', 'This order has already been paid or cancelled.');
+
+                return null;
+            }
+
+            $method = PaymentMethod::query()
+                ->whereKey($this->selectedPaymentMethodId)
+                ->where('active', true)
+                ->first();
+
+            if (! $method) {
+                $this->addError('payment', 'This payment method is not available.');
+
+                return null;
+            }
+
+            if ($method->ref_required && trim($this->paymentReference) === '') {
+                $this->addError('paymentReference', 'Reference is required for this payment method.');
+
+                return null;
+            }
+
+            $total = round((float) $order->items()->sum('subtotal'), 2);
+
+            if ($total <= 0) {
+                $this->addError('payment', 'An order must have at least one item before payment.');
+
+                return null;
+            }
+
+            $payment = $order->payments()->create([
+                'payment_method_id' => $method->id,
+                'amount' => $total,
+                'reference' => trim($this->paymentReference) ?: null,
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+
+            $order->update([
+                'status' => Order::STATUS_PAID,
+                'total' => $total,
+                'paid_at' => now(),
+            ]);
+
+            return $payment;
+        });
+
+        if (! $payment) {
+            return;
+        }
+
+        $this->order = $payment->order->load('table', 'items', 'payments.method');
+        $this->showConfirmPaymentModal = false;
+        $this->resetPaymentForm();
+        $this->paymentSuccess = 'Payment completed successfully.';
+    }
+
     /**
      * @return array<int, int>
      */
@@ -368,6 +523,41 @@ new #[Title('POS / Cashier')] class extends Component {
         return true;
     }
 
+    private function ensurePayable(): bool
+    {
+        if (! $this->order->isOpen()) {
+            $this->addError('payment', 'Paid or cancelled orders cannot be paid.');
+
+            return false;
+        }
+
+        if ($this->order->items()->count() === 0) {
+            $this->addError('payment', 'An order must have at least one item before payment.');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function selectedPaymentMethod(): ?PaymentMethod
+    {
+        if (! $this->selectedPaymentMethodId) {
+            return null;
+        }
+
+        return PaymentMethod::query()
+            ->whereKey($this->selectedPaymentMethodId)
+            ->where('active', true)
+            ->first();
+    }
+
+    private function resetPaymentForm(): void
+    {
+        $this->reset(['selectedPaymentMethodId', 'paymentReference']);
+        $this->resetValidation();
+    }
+
     private function resetAddItemForm(): void
     {
         $this->reset(['selectedItemId', 'quantity', 'notes', 'selections', 'itemSearch', 'categoryFilter', 'editingLineId']);
@@ -383,6 +573,9 @@ new #[Title('POS / Cashier')] class extends Component {
     @error('order')
         <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">{{ $message }}</div>
     @enderror
+    @if ($paymentSuccess)
+        <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-2">{{ $paymentSuccess }}</div>
+    @endif
 
     <x-card>
         <div class="flex items-center justify-between mb-4">
@@ -448,7 +641,13 @@ new #[Title('POS / Cashier')] class extends Component {
         <div class="flex gap-2">
             @if ($this->canEdit)
                 <button wire:click="openAddItemModal" class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">+ Add Item</button>
-                <button class="bg-green-600 text-white text-sm font-medium px-4 py-2 rounded">Payment</button>
+                <button
+                    wire:click="openPaymentModal"
+                    @disabled($order->items->isEmpty())
+                    class="bg-green-600 text-white text-sm font-medium px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Payment
+                </button>
             @endif
             <a href="{{ route('orders', ['table' => $order->table->name ?? '']) }}" class="bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded">Orders ({{ \App\Models\Order::where('restaurant_table_id', $order->restaurant_table_id)->whereIn('status', \App\Models\Order::OPEN_STATUSES)->count() }})</a>
             <button class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">Print</button>
@@ -632,6 +831,64 @@ new #[Title('POS / Cashier')] class extends Component {
         <div class="flex justify-end gap-2">
             <button wire:click="cancelRemove" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
             <button wire:click="removeLine" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Remove</button>
+        </div>
+    </x-modal>
+
+    <x-modal :show="$showPaymentModal" title="Payment" close="closePaymentModal">
+        <div class="space-y-5">
+            @error('payment') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+            <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3">
+                <span class="text-sm text-gray-600">Total Amount</span>
+                <span class="text-lg font-bold text-gray-900">RM{{ number_format((float) $order->total, 2) }}</span>
+            </div>
+
+            <div>
+                <p class="text-sm font-medium text-gray-700 mb-2">Payment Method</p>
+                <div class="flex flex-wrap gap-2">
+                    @forelse ($this->paymentMethods as $method)
+                        <button
+                            type="button"
+                            wire:click="selectPaymentMethod({{ $method->id }})"
+                            class="rounded-full border px-4 py-2 text-sm {{ $selectedPaymentMethodId === $method->id ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700 hover:border-indigo-400' }}"
+                        >
+                            {{ $method->description }}
+                        </button>
+                    @empty
+                        <p class="text-sm text-gray-500">No active payment methods are available.</p>
+                    @endforelse
+                </div>
+                @error('payment') <p class="text-xs text-red-600 mt-2">{{ $message }}</p> @enderror
+            </div>
+
+            @if ($this->selectedPaymentMethod?->ref_required)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+                    <input type="text" wire:model="paymentReference" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+                    @error('paymentReference') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                </div>
+            @endif
+
+            <div class="flex justify-end gap-2 border-t border-gray-200 pt-4">
+                <button wire:click="closePaymentModal" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
+                <button wire:click="confirmPayment" class="px-4 py-2 text-sm bg-green-600 text-white rounded">Continue</button>
+            </div>
+        </div>
+    </x-modal>
+
+    <x-modal :show="$showConfirmPaymentModal" title="Confirm Payment" close="cancelConfirmPayment">
+        @php($selectedPaymentMethod = $this->selectedPaymentMethod)
+        <div class="space-y-4">
+            @error('payment') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between"><span class="text-gray-500">Total</span><span class="font-semibold">RM{{ number_format((float) $order->total, 2) }}</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Method</span><span>{{ $selectedPaymentMethod?->description ?? '-' }}</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Reference</span><span>{{ $paymentReference ?: '-' }}</span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Order/Table</span><span>#{{ $order->id }} / {{ $order->table->name ?? '-' }}</span></div>
+            </div>
+            <div class="flex justify-end gap-2 border-t border-gray-200 pt-4">
+                <button wire:click="cancelConfirmPayment" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
+                <button wire:click="payNow" class="px-4 py-2 text-sm bg-green-600 text-white rounded">Yes, Pay Now</button>
+            </div>
         </div>
     </x-modal>
 </div>
