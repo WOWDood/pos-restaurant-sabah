@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Item extends Model
 {
-    /** @use HasFactory<\Database\Factories\ItemFactory> */
+    /** @use HasFactory<ItemFactory> */
     use HasFactory;
 
     protected $fillable = ['code', 'category_id', 'description', 'notes', 'unit_price', 'active', 'type', 'is_combo'];
@@ -27,5 +28,10 @@ class Item extends Model
     public function modifierGroups()
     {
         return $this->hasMany(ModifierGroup::class, 'item_id');
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
     }
 }

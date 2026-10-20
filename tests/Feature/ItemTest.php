@@ -2,7 +2,14 @@
 
 use App\Models\Category;
 use App\Models\Item;
+use App\Models\ModifierGroup;
+use App\Models\ModifierOption;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\RestaurantTable;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     $this->user = User::factory()->create(['email_verified_at' => now()]);
@@ -70,10 +77,36 @@ it('can delete an item', function () {
     expect(Item::find($item->id))->toBeNull();
 });
 
+it('does not delete an item that is used in an order', function () {
+    $item = Item::factory()->create(['code' => 'Used', 'category_id' => $this->category->id]);
+    $order = Order::create([
+        'restaurant_table_id' => RestaurantTable::factory()->create()->id,
+        'status' => Order::STATUS_NEW,
+        'total' => 10,
+        'created_by' => $this->user->id,
+    ]);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'item_id' => $item->id,
+        'item_code' => $item->code,
+        'item_description' => $item->description,
+        'quantity' => 1,
+        'unit_price' => 10,
+        'subtotal' => 10,
+    ]);
+
+    Livewire\Livewire::test('pages::items')
+        ->call('confirmDelete', $item->id)
+        ->call('delete')
+        ->assertHasErrors('delete');
+
+    expect(Item::find($item->id))->not->toBeNull();
+});
+
 it('can upload a photo', function () {
-    \Illuminate\Support\Facades\Storage::fake('public');
+    Storage::fake('public');
     $item = Item::factory()->create(['code' => 'Photo', 'category_id' => $this->category->id]);
-    $file = \Illuminate\Http\UploadedFile::fake()->image('photo.jpg');
+    $file = UploadedFile::fake()->image('photo.jpg');
 
     Livewire\Livewire::test('pages::items')
         ->set('photoItemId', $item->id)
@@ -83,7 +116,7 @@ it('can upload a photo', function () {
     $photo = $item->photos()->first();
     expect($item->photos()->count())->toBe(1)
         ->and($photo->is_primary)->toBeTrue();
-    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($photo->path);
+    Storage::disk('public')->assertExists($photo->path);
 });
 
 it('can add a modifier group and option', function () {
@@ -96,7 +129,7 @@ it('can add a modifier group and option', function () {
         ->set('newGroupMax', 1)
         ->call('saveGroup');
 
-    $group = \App\Models\ModifierGroup::where('item_id', $item->id)->first();
+    $group = ModifierGroup::where('item_id', $item->id)->first();
     expect($group)->not->toBeNull();
 
     Livewire\Livewire::test('pages::items')
@@ -105,5 +138,5 @@ it('can add a modifier group and option', function () {
         ->set('newOptionEn', 'Cheese')
         ->call('saveOption');
 
-    expect(\App\Models\ModifierOption::where('modifier_group_id', $group->id)->where('name_en', 'Cheese')->exists())->toBeTrue();
+    expect(ModifierOption::where('modifier_group_id', $group->id)->where('name_en', 'Cheese')->exists())->toBeTrue();
 });

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Order;
 use App\Models\RestaurantTable;
 use App\Models\User;
 
@@ -41,4 +42,21 @@ it('can delete a table', function () {
         ->call('delete');
 
     expect(RestaurantTable::find($t->id))->toBeNull();
+});
+
+it('does not delete a table that has orders', function () {
+    $table = RestaurantTable::factory()->create(['name' => 'tableBusy']);
+    Order::create([
+        'restaurant_table_id' => $table->id,
+        'status' => Order::STATUS_NEW,
+        'total' => 0,
+        'created_by' => $this->user->id,
+    ]);
+
+    Livewire\Livewire::test('pages::tables')
+        ->call('confirmDelete', $table->id)
+        ->call('delete')
+        ->assertHasErrors('delete');
+
+    expect(RestaurantTable::find($table->id))->not->toBeNull();
 });

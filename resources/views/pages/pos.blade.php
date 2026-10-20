@@ -23,8 +23,8 @@ new #[Title('POS / Cashier')] class extends Component {
             ->orderBy('name')
             ->get()
             ->map(function ($table) {
-                $table->open_orders_count = Order::where('restaurant_table_id', $table->id)
-                    ->whereIn('status', ['new', 'pre_order'])
+                $table->open_orders_count = $table->orders()
+                    ->whereIn('status', Order::OPEN_STATUSES)
                     ->count();
                 return $table;
             });
@@ -33,8 +33,8 @@ new #[Title('POS / Cashier')] class extends Component {
     public function openTable(int $id): void
     {
         $this->selectedTableId = $id;
-        $table = RestaurantTable::find($id);
-        $openCount = Order::where('restaurant_table_id', $id)->whereIn('status', ['new', 'pre_order'])->count();
+        $table = RestaurantTable::findOrFail($id);
+        $openCount = $table->orders()->whereIn('status', Order::OPEN_STATUSES)->count();
         if ($openCount === 0) {
             $this->showCreateModal = true;
         } else {
@@ -58,7 +58,7 @@ new #[Title('POS / Cashier')] class extends Component {
     {
         $order = Order::create([
             'restaurant_table_id' => $this->selectedTableId,
-            'status' => 'new',
+            'status' => Order::STATUS_NEW,
             'total' => 0,
             'created_by' => auth()->id(),
         ]);
@@ -83,7 +83,7 @@ new #[Title('POS / Cashier')] class extends Component {
             <button class="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded">Search</button>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" wire:poll.10s>
             @foreach ($this->tables as $table)
                 <div wire:click="openTable({{ $table->id }})" class="cursor-pointer bg-white border border-gray-200 rounded-lg p-4 text-center hover:shadow">
                     <p class="font-semibold text-gray-900 mb-2">{{ $table->name }}</p>
@@ -101,7 +101,7 @@ new #[Title('POS / Cashier')] class extends Component {
 
     {{-- Table action modal --}}
     <x-modal :show="$showTableModal" title="{{ \App\Models\RestaurantTable::find($selectedTableId)?->name }}" close="$set('showTableModal', false)">
-        <p class="text-sm text-amber-600 mb-4">{{ \App\Models\Order::where('restaurant_table_id', $selectedTableId)->whereIn('status', ['new','pre_order'])->count() }} open order(s) found</p>
+        <p class="text-sm text-amber-600 mb-4">{{ \App\Models\RestaurantTable::find($selectedTableId)?->orders()->whereIn('status', \App\Models\Order::OPEN_STATUSES)->count() ?? 0 }} open order(s) found</p>
         <p class="text-sm text-gray-500 mb-4">What would you like to do?</p>
         <div class="space-y-2">
             <button wire:click="viewOpenOrders" class="w-full bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">View Open Orders</button>

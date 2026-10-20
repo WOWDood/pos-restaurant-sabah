@@ -51,7 +51,7 @@ new #[Title('Table Search')] class extends Component {
     {
         if ($this->deleteId) {
             $t = RestaurantTable::findOrFail($this->deleteId);
-            if (\Illuminate\Support\Facades\Schema::hasTable('orders') && \Illuminate\Support\Facades\DB::table('orders')->where('restaurant_table_id', $t->id)->exists()) {
+            if ($t->orders()->exists()) {
                 $this->addError('delete', 'Cannot delete a table that has orders.');
                 $this->deleteId = null;
                 return;

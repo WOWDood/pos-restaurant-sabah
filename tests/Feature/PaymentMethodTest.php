@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\Order;
+use App\Models\Payment;
 use App\Models\PaymentMethod;
+use App\Models\RestaurantTable;
 use App\Models\User;
 
 beforeEach(function () {
@@ -31,4 +34,28 @@ it('can delete a payment method', function () {
         ->call('delete');
 
     expect(PaymentMethod::find($pm->id))->toBeNull();
+});
+
+it('does not delete a payment method that has payments', function () {
+    $pm = PaymentMethod::factory()->create(['description' => 'InUse']);
+    $order = Order::create([
+        'restaurant_table_id' => RestaurantTable::factory()->create()->id,
+        'status' => Order::STATUS_NEW,
+        'total' => 10,
+        'created_by' => $this->user->id,
+    ]);
+    Payment::create([
+        'order_id' => $order->id,
+        'payment_method_id' => $pm->id,
+        'amount' => 10,
+        'status' => 'paid',
+        'paid_at' => now(),
+    ]);
+
+    Livewire\Livewire::test('pages::payment-methods')
+        ->call('confirmDelete', $pm->id)
+        ->call('delete')
+        ->assertHasErrors('delete');
+
+    expect(PaymentMethod::find($pm->id))->not->toBeNull();
 });

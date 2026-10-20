@@ -113,7 +113,13 @@ new #[Title('Item Search')] class extends Component {
     public function delete(): void
     {
         if ($this->deleteId) {
-            Item::findOrFail($this->deleteId)->delete();
+            $item = Item::findOrFail($this->deleteId);
+            if ($item->orderItems()->exists()) {
+                $this->addError('delete', 'Cannot delete an item that is used in orders.');
+                $this->deleteId = null;
+                return;
+            }
+            $item->delete();
         }
         $this->deleteId = null;
     }
@@ -422,6 +428,7 @@ new #[Title('Item Search')] class extends Component {
     {{-- Delete Item Modal --}}
     <x-modal :show="(bool) $deleteId" title="Delete Item" close="$set('deleteId', null)">
         <p class="text-sm text-gray-700 mb-4">Delete this item?</p>
+        @error('delete') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
             <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>

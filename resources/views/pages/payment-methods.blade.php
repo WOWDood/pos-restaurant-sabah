@@ -68,7 +68,7 @@ new #[Title('Payment Method Search')] class extends Component {
     {
         if ($this->deleteId) {
             $pm = PaymentMethod::findOrFail($this->deleteId);
-            if (\Illuminate\Support\Facades\Schema::hasTable('payments') && \Illuminate\Support\Facades\DB::table('payments')->where('payment_method_id', $pm->id)->exists()) {
+            if ($pm->payments()->exists()) {
                 $this->addError('delete', 'Cannot delete a payment method that has payments.');
                 $this->deleteId = null;
                 return;
