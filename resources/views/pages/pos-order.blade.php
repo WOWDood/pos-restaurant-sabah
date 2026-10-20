@@ -1,16 +1,19 @@
 <?php
 
+use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Item;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
+use App\Models\Receipt;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('POS / Cashier')] class extends Component {
+new #[Title('POS / Cashier')] class extends Component
+{
     public Order $order;
 
     public bool $showAddItemModal = false;
@@ -43,6 +46,8 @@ new #[Title('POS / Cashier')] class extends Component {
     public string $paymentReference = '';
 
     public ?string $paymentSuccess = null;
+
+    public bool $showReceiptModal = false;
 
     public function mount(Order $order): void
     {
@@ -370,6 +375,11 @@ new #[Title('POS / Cashier')] class extends Component {
         return $this->selectedPaymentMethod();
     }
 
+    public function getBusinessSettingsProperty()
+    {
+        return BusinessSetting::query()->pluck('value', 'key');
+    }
+
     public function openPaymentModal(): void
     {
         if (! $this->ensurePayable()) {
@@ -485,6 +495,11 @@ new #[Title('POS / Cashier')] class extends Component {
                 'paid_at' => now(),
             ]);
 
+            Receipt::create([
+                'order_id' => $order->id,
+                'receipt_number' => 'RCPT-'.str_pad((string) $order->id, 6, '0', STR_PAD_LEFT),
+            ]);
+
             return $payment;
         });
 
@@ -492,10 +507,37 @@ new #[Title('POS / Cashier')] class extends Component {
             return;
         }
 
-        $this->order = $payment->order->load('table', 'items', 'payments.method');
+        $this->order = $payment->order->load('table', 'items', 'payments.method', 'receipt');
         $this->showConfirmPaymentModal = false;
         $this->resetPaymentForm();
+        $this->showReceiptModal = true;
         $this->paymentSuccess = 'Payment completed successfully.';
+    }
+
+    public function closeReceiptModal(): void
+    {
+        $this->showReceiptModal = false;
+    }
+
+    public function openReceipt(): void
+    {
+        if ($this->order->status !== Order::STATUS_PAID) {
+            $this->addError('order', 'Receipts are available for paid orders only.');
+
+            return;
+        }
+
+        $this->order->load('table', 'items', 'payments.method', 'receipt');
+        $this->showReceiptModal = true;
+    }
+
+    public function markReceiptPrinted(): void
+    {
+        if (! $this->order->receipt) {
+            return;
+        }
+
+        $this->order->receipt->update(['printed_at' => now()]);
     }
 
     /**
@@ -566,6 +608,26 @@ new #[Title('POS / Cashier')] class extends Component {
         $this->resetValidation();
     }
 }; ?>
+
+<style>
+    @media print {
+        body * { visibility: hidden; }
+        .receipt-print, .receipt-print * { visibility: visible; }
+        .receipt-print {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 80mm;
+            margin: 0;
+            padding: 4mm;
+            color: #000;
+            background: #fff;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px;
+        }
+        .receipt-print button { display: none !important; }
+    }
+</style>
 
 <div class="space-y-4">
     <h1 class="text-xl font-bold text-gray-900">POS / Cashier</h1>
@@ -650,7 +712,9 @@ new #[Title('POS / Cashier')] class extends Component {
                 </button>
             @endif
             <a href="{{ route('orders', ['table' => $order->table->name ?? '']) }}" class="bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded">Orders ({{ \App\Models\Order::where('restaurant_table_id', $order->restaurant_table_id)->whereIn('status', \App\Models\Order::OPEN_STATUSES)->count() }})</a>
-            <button class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">Print</button>
+            @if ($order->status === Order::STATUS_PAID)
+                <button wire:click="openReceipt" class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">Print</button>
+            @endif
         </div>
         <div class="mt-3">
             <a href="{{ route('pos') }}" class="text-sm text-indigo-600 hover:underline">Back to Tables</a>
@@ -717,10 +781,14 @@ new #[Title('POS / Cashier')] class extends Component {
                 </div>
             </div>
         @else
-            @php($selectedItem = $this->selectedItem)
+            @php
+                $selectedItem = $this->selectedItem;
+            @endphp
             @if ($selectedItem)
                 <div class="space-y-4">
-                    @php($primaryPhoto = $selectedItem->photos->firstWhere('is_primary', true) ?? $selectedItem->photos->first())
+                    @php
+                        $primaryPhoto = $selectedItem->photos->firstWhere('is_primary', true) ?? $selectedItem->photos->first();
+                    @endphp
                     <div class="flex gap-4 bg-indigo-50 rounded-lg p-4">
                         @if ($primaryPhoto)
                             <img src="{{ \Illuminate\Support\Facades\Storage::url($primaryPhoto->path) }}" alt="{{ $selectedItem->description }}" class="w-28 h-24 object-cover rounded-md border border-white shadow-sm" />
@@ -876,7 +944,9 @@ new #[Title('POS / Cashier')] class extends Component {
     </x-modal>
 
     <x-modal :show="$showConfirmPaymentModal" title="Confirm Payment" close="cancelConfirmPayment">
-        @php($selectedPaymentMethod = $this->selectedPaymentMethod)
+        @php
+            $selectedPaymentMethod = $this->selectedPaymentMethod;
+        @endphp
         <div class="space-y-4">
             @error('payment') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
             <div class="space-y-2 text-sm">
@@ -888,6 +958,53 @@ new #[Title('POS / Cashier')] class extends Component {
             <div class="flex justify-end gap-2 border-t border-gray-200 pt-4">
                 <button wire:click="cancelConfirmPayment" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
                 <button wire:click="payNow" class="px-4 py-2 text-sm bg-green-600 text-white rounded">Yes, Pay Now</button>
+            </div>
+        </div>
+    </x-modal>
+
+    <x-modal :show="$showReceiptModal" title="Receipt" close="closeReceiptModal" wide>
+        @php
+            $receipt = $order->receipt;
+            $payment = $order->payments->sortByDesc('id')->first();
+            $settings = $this->businessSettings;
+        @endphp
+        <div class="receipt-print space-y-3 text-sm">
+            <div class="text-center">
+                <p class="text-lg font-bold">{{ $settings['business_name'] ?? 'Kedai Soto Banso' }}</p>
+                <p>{{ $settings['location'] ?? '' }}</p>
+                <p>{{ $settings['phone'] ?? '' }}</p>
+            </div>
+            <div class="border-t border-b border-gray-300 py-2 space-y-1">
+                <div class="flex justify-between"><span>Receipt</span><span>{{ $receipt?->receipt_number ?? '-' }}</span></div>
+                <div class="flex justify-between"><span>Order #</span><span>{{ $order->id }}</span></div>
+                <div class="flex justify-between"><span>Table</span><span>{{ $order->table->name ?? '-' }}</span></div>
+                <div class="flex justify-between"><span>Date</span><span>{{ $order->paid_at?->format('d M Y') }}</span></div>
+                <div class="flex justify-between"><span>Time</span><span>{{ $order->paid_at?->format('H:i') }}</span></div>
+            </div>
+            <div class="space-y-2">
+                @foreach ($order->items as $line)
+                    <div>
+                        <div class="flex justify-between gap-2">
+                            <span>{{ $line->quantity }} x {{ $line->item_description }}</span>
+                            <span>RM{{ number_format((float) $line->subtotal, 2) }}</span>
+                        </div>
+                        @if (! empty($line->modifiers))
+                            <p class="text-xs text-gray-500">{{ collect($line->modifiers)->pluck('name_en')->join(', ') }}</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+            <div class="border-t border-gray-300 pt-2 space-y-1">
+                <div class="flex justify-between font-bold"><span>Total</span><span>RM{{ number_format((float) $order->total, 2) }}</span></div>
+                <div class="flex justify-between"><span>Payment</span><span>{{ $payment?->method?->description ?? '-' }}</span></div>
+                @if ($payment?->reference)
+                    <div class="flex justify-between"><span>Reference</span><span>{{ $payment->reference }}</span></div>
+                @endif
+            </div>
+            <p class="text-center font-medium pt-2">Thank you for your visit!</p>
+            <div class="flex justify-end gap-2 pt-3 print-hidden">
+                <button wire:click="closeReceiptModal" class="px-4 py-2 text-sm border border-gray-300 rounded">Close</button>
+                <button wire:click="markReceiptPrinted" onclick="window.print()" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">Print</button>
             </div>
         </div>
     </x-modal>

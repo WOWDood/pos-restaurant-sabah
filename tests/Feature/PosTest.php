@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
+use App\Models\Receipt;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use Livewire\Livewire;
@@ -350,7 +351,9 @@ it('completes a payment and marks the order paid', function () {
 
     expect($order->fresh()->status)->toBe(Order::STATUS_PAID)
         ->and((float) Payment::first()->amount)->toBe(12.0)
-        ->and((int) Payment::first()->payment_method_id)->toBe($method->id);
+        ->and((int) Payment::first()->payment_method_id)->toBe($method->id)
+        ->and(Receipt::count())->toBe(1)
+        ->and(Receipt::first()->receipt_number)->toBe('RCPT-'.str_pad((string) $order->id, 6, '0', STR_PAD_LEFT));
 });
 
 it('requires a reference for payment methods that need one', function () {
@@ -459,4 +462,29 @@ it('recomputes the payment total from order items on the server', function () {
 
     expect((float) Payment::first()->amount)->toBe(8.0)
         ->and((float) $order->fresh()->total)->toBe(8.0);
+});
+
+it('includes the paid order lines and total in the receipt modal', function () {
+    $order = newPosOrder($this->user, $this->table);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'item_code' => 'A1',
+        'item_description' => 'Mee Sup',
+        'quantity' => 2,
+        'unit_price' => 8,
+        'subtotal' => 16,
+        'modifiers' => [['name_en' => 'Egg']],
+    ]);
+    $method = PaymentMethod::factory()->create(['description' => 'QR Pay']);
+
+    Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openPaymentModal')
+        ->call('selectPaymentMethod', $method->id)
+        ->call('confirmPayment')
+        ->call('payNow')
+        ->assertSee('Mee Sup')
+        ->assertSee('Egg')
+        ->assertSee('RM16.00')
+        ->assertSee('QR Pay')
+        ->assertSee('Thank you for your visit!');
 });

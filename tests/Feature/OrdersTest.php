@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Order;
+use App\Models\Receipt;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use Livewire\Livewire;
@@ -71,4 +72,24 @@ it('resets pagination when the table filter or search changes', function () {
         ->assertSet('paginators.page', 1);
 
     expect($component->get('search'))->toBe('');
+});
+
+it('opens order detail and only opens receipt print for paid orders', function () {
+    $unpaid = createOrderForTable($this->tableA, $this->user);
+    $paid = createOrderForTable($this->tableB, $this->user, Order::STATUS_PAID);
+    Receipt::create([
+        'order_id' => $paid->id,
+        'receipt_number' => 'RCPT-'.str_pad((string) $paid->id, 6, '0', STR_PAD_LEFT),
+    ]);
+
+    Livewire::test('pages::orders')
+        ->call('openOrderDetail', $unpaid->id)
+        ->assertSet('showDetailModal', true)
+        ->assertSee('Order Detail')
+        ->call('closeOrderDetail')
+        ->call('openReceipt', $unpaid->id)
+        ->assertSet('showReceiptModal', false)
+        ->call('openReceipt', $paid->id)
+        ->assertSet('showReceiptModal', true)
+        ->assertSee('Thank you for your visit!');
 });
