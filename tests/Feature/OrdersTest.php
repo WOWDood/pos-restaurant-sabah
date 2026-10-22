@@ -91,6 +91,7 @@ it('opens order detail and only opens receipt print for paid orders', function (
         ->assertSet('showReceiptModal', false)
         ->call('openReceipt', $paid->id)
         ->assertSet('showReceiptModal', true)
+        ->assertSee('id="receipt-print"', false)
         ->assertSee('Thank you for your visit!');
 });
 

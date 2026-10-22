@@ -620,21 +620,79 @@ new #[Title('POS / Cashier')] class extends Component
 
 <style>
     @media print {
-        body * { visibility: hidden; }
-        .receipt-print, .receipt-print * { visibility: visible; }
-        .receipt-print {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 80mm;
+        @page {
+            size: 80mm auto;
             margin: 0;
-            padding: 4mm;
+        }
+
+        html,
+        body {
+            width: 80mm !important;
+            min-height: 0 !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+        }
+
+        body * { visibility: hidden; }
+        #receipt-print,
+        #receipt-print * { visibility: visible; }
+        .receipt-modal {
+            position: static !important;
+            inset: auto !important;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+            background: transparent !important;
+        }
+        .receipt-modal .modal-card {
+            position: static !important;
+            display: block !important;
+            width: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
+        .receipt-modal .modal-header,
+        .receipt-modal .modal-body {
+            position: static !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        .receipt-modal .modal-header { display: none !important; }
+        .receipt-modal .modal-body { padding: 0 !important; }
+        #receipt-print {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 74mm;
+            max-width: 74mm;
+            min-height: 0;
+            margin: 0;
+            padding: 4mm 3mm;
+            box-sizing: border-box;
+            transform: translateX(-50%);
             color: #000;
             background: #fff;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 11px;
+            line-height: 1.35;
         }
-        .receipt-print button { display: none !important; }
+        #receipt-print * {
+            font-family: inherit !important;
+        }
+        #receipt-print .receipt-subline {
+            display: block;
+            padding-left: 2ch;
+        }
+        #receipt-print button,
+        #receipt-print .print-hidden { display: none !important; }
     }
 </style>
 
@@ -972,14 +1030,14 @@ new #[Title('POS / Cashier')] class extends Component
         </div>
     </x-modal>
 
-    <x-modal :show="$showReceiptModal" title="Receipt" close="closeReceiptModal" wide>
+    <x-modal :show="$showReceiptModal" title="Receipt" close="closeReceiptModal" wide class="receipt-modal">
         @if ($showReceiptModal)
             @php
                 $receipt = $order->receipt;
                 $payment = $order->payments->sortByDesc('id')->first();
                 $settings = $this->businessSettings;
             @endphp
-            <div class="receipt-print space-y-3 text-sm">
+            <div id="receipt-print" class="receipt-print space-y-3 text-sm">
             <div class="text-center">
                 <p class="text-lg font-bold">{{ $settings['business_name'] ?? 'Kedai Soto Banso' }}</p>
                 <p>{{ $settings['location'] ?? '' }}</p>
@@ -1000,7 +1058,10 @@ new #[Title('POS / Cashier')] class extends Component
                             <span>RM{{ number_format((float) $line->subtotal, 2) }}</span>
                         </div>
                         @if (! empty($line->modifiers))
-                            <p class="text-xs text-gray-500">{{ collect($line->modifiers)->pluck('name_en')->join(', ') }}</p>
+                            <p class="receipt-subline text-xs text-gray-500">{{ collect($line->modifiers)->pluck('name_en')->join(', ') }}</p>
+                        @endif
+                        @if ($line->notes)
+                            <p class="receipt-subline text-xs text-gray-500">Note: {{ $line->notes }}</p>
                         @endif
                     </div>
                 @endforeach

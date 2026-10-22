@@ -492,6 +492,7 @@ it('includes the paid order lines and total in the receipt modal', function () {
         'unit_price' => 8,
         'subtotal' => 16,
         'modifiers' => [['name_en' => 'Egg']],
+        'notes' => 'Less spicy',
     ]);
     $method = PaymentMethod::factory()->create(['description' => 'QR Pay']);
 
@@ -500,8 +501,10 @@ it('includes the paid order lines and total in the receipt modal', function () {
         ->call('selectPaymentMethod', $method->id)
         ->call('confirmPayment')
         ->call('payNow')
+        ->assertSee('id="receipt-print"', false)
         ->assertSee('Mee Sup')
         ->assertSee('Egg')
+        ->assertSee('Note: Less spicy')
         ->assertSee('RM16.00')
         ->assertSee('QR Pay')
         ->assertSee('Thank you for your visit!');
