@@ -59,6 +59,11 @@ new #[Title('POS / Cashier')] class extends Component
         return $this->order->isEditable();
     }
 
+    public function getCanPayProperty(): bool
+    {
+        return $this->order->isOpen() && $this->order->items()->exists();
+    }
+
     public function getCategoriesProperty()
     {
         return Category::query()->orderBy('sort_order')->orderBy('id')->get();
@@ -382,6 +387,10 @@ new #[Title('POS / Cashier')] class extends Component
 
     public function openPaymentModal(): void
     {
+        $this->order = Order::query()
+            ->with('table', 'items')
+            ->findOrFail($this->order->id);
+
         if (! $this->ensurePayable()) {
             return;
         }
@@ -704,8 +713,9 @@ new #[Title('POS / Cashier')] class extends Component
             @if ($this->canEdit)
                 <button wire:click="openAddItemModal" class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">+ Add Item</button>
                 <button
-                    wire:click="openPaymentModal"
-                    @disabled($order->items->isEmpty())
+                    type="button"
+                    wire:click.prevent="openPaymentModal"
+                    @disabled(! $this->canPay)
                     class="bg-green-600 text-white text-sm font-medium px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Payment

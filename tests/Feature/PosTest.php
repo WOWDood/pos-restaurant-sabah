@@ -356,6 +356,24 @@ it('completes a payment and marks the order paid', function () {
         ->and(Receipt::first()->receipt_number)->toBe('RCPT-'.str_pad((string) $order->id, 6, '0', STR_PAD_LEFT));
 });
 
+it('opens the payment modal from an order that has lines', function () {
+    $order = newPosOrder($this->user, $this->table);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'item_code' => 'A1',
+        'item_description' => 'Mee Sup',
+        'quantity' => 1,
+        'unit_price' => 8,
+        'subtotal' => 8,
+    ]);
+
+    Livewire::test('pages::pos-order', ['order' => $order])
+        ->assertSet('canPay', true)
+        ->call('openPaymentModal')
+        ->assertSet('showPaymentModal', true)
+        ->assertSee('Total Amount');
+});
+
 it('requires a reference for payment methods that need one', function () {
     $order = newPosOrder($this->user, $this->table);
     OrderItem::create([
