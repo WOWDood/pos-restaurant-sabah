@@ -973,12 +973,13 @@ new #[Title('POS / Cashier')] class extends Component
     </x-modal>
 
     <x-modal :show="$showReceiptModal" title="Receipt" close="closeReceiptModal" wide>
-        @php
-            $receipt = $order->receipt;
-            $payment = $order->payments->sortByDesc('id')->first();
-            $settings = $this->businessSettings;
-        @endphp
-        <div class="receipt-print space-y-3 text-sm">
+        @if ($showReceiptModal)
+            @php
+                $receipt = $order->receipt;
+                $payment = $order->payments->sortByDesc('id')->first();
+                $settings = $this->businessSettings;
+            @endphp
+            <div class="receipt-print space-y-3 text-sm">
             <div class="text-center">
                 <p class="text-lg font-bold">{{ $settings['business_name'] ?? 'Kedai Soto Banso' }}</p>
                 <p>{{ $settings['location'] ?? '' }}</p>
@@ -1016,6 +1017,7 @@ new #[Title('POS / Cashier')] class extends Component
                 <button wire:click="closeReceiptModal" class="px-4 py-2 text-sm border border-gray-300 rounded">Close</button>
                 <button wire:click="markReceiptPrinted" onclick="window.print()" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">Print</button>
             </div>
-        </div>
+            </div>
+        @endif
     </x-modal>
 </div>

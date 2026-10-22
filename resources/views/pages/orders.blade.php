@@ -266,7 +266,7 @@ new #[Title('Orders')] class extends Component
     </x-modal>
 
     <x-modal :show="$showReceiptModal" title="Receipt" close="closeReceipt" wide>
-        @if ($selectedOrder)
+        @if ($showReceiptModal && $selectedOrder)
             @php
                 $receipt = $selectedOrder->receipt;
                 $payment = $selectedOrder->payments->sortByDesc('id')->first();

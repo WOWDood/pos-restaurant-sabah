@@ -93,3 +93,14 @@ it('opens order detail and only opens receipt print for paid orders', function (
         ->assertSet('showReceiptModal', true)
         ->assertSee('Thank you for your visit!');
 });
+
+it('does not load receipt data while viewing an order detail', function () {
+    $order = createOrderForTable($this->tableA, $this->user);
+
+    $component = Livewire::test('pages::orders')
+        ->call('openOrderDetail', $order->id)
+        ->assertSet('showDetailModal', true)
+        ->assertSet('showReceiptModal', false);
+
+    expect($component->get('selectedOrder')->relationLoaded('receipt'))->toBeFalse();
+});
