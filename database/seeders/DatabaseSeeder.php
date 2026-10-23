@@ -20,7 +20,15 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            "password" => bcrypt('password'),
+            'password' => bcrypt('password'),
+        ]);
+
+        $this->call([
+            BusinessSettingsSeeder::class,
+            CategorySeeder::class,
+            ItemSeeder::class,
+            RestaurantTableSeeder::class,
+            PaymentMethodSeeder::class,
         ]);
     }
 }
