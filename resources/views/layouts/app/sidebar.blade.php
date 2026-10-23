@@ -3,15 +3,23 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-gray-100 text-gray-900">
+    <body class="min-h-screen bg-gray-100 text-gray-900" x-data="{ sidebarOpen: false }">
         {{-- Top header bar --}}
         <header class="fixed top-0 left-0 right-0 h-12 bg-indigo-600 flex items-center px-4 text-white print:hidden z-50">
+            <button type="button" class="mr-3 inline-flex items-center justify-center rounded p-1 hover:bg-indigo-500 md:hidden" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle navigation">
+                <flux:icon.bars-3 class="w-5 h-5" />
+            </button>
             <span class="font-semibold text-sm">Livewire Shop</span>
         </header>
 
         <div class="flex min-h-screen print:block">
+            <div x-cloak x-show="sidebarOpen" class="fixed inset-0 top-12 bg-black/40 print:hidden z-30 md:hidden" @click="sidebarOpen = false"></div>
+
             {{-- Left sidebar --}}
-            <aside class="fixed top-12 left-0 bottom-0 w-60 bg-indigo-700 text-white flex flex-col print:hidden z-40 overflow-y-auto">
+            <aside
+                class="fixed top-12 left-0 bottom-0 w-60 bg-indigo-700 text-white flex flex-col print:hidden z-40 overflow-y-auto transform transition-transform duration-200 ease-out -translate-x-full md:translate-x-0"
+                :class="{ 'translate-x-0': sidebarOpen }"
+            >
                 <div class="px-4 py-3 font-semibold text-sm border-b border-indigo-500">
                     Kedai Soto Banso
                 </div>
@@ -98,8 +106,8 @@
             </aside>
 
             {{-- Main content --}}
-            <main class="ml-60 mt-12 p-6 bg-gray-100 min-h-screen print:ml-0 print:mt-0">
-                <div class="max-w-6xl mx-auto">
+            <main class="ml-0 md:ml-60 mt-12 p-4 sm:p-6 bg-gray-100 min-h-screen print:ml-0 print:mt-0">
+                <div class="max-w-6xl mx-auto min-w-0">
                     {{ $slot }}
                 </div>
             </main>
