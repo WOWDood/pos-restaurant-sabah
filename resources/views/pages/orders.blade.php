@@ -97,7 +97,7 @@ new #[Title('Orders')] class extends Component
     public function getOrdersProperty()
     {
         return Order::query()
-            ->with('table')
+            ->with(['table', 'payments.method'])
             ->when($this->status !== 'all', fn ($query) => $query->where('status', $this->status))
             ->when($this->search, fn ($query) => $query->whereHas('table', fn ($table) => $table->where('name', 'like', "%{$this->search}%")))
             ->orderByDesc('id')
@@ -241,6 +241,7 @@ new #[Title('Orders')] class extends Component
                     <th class="text-left px-3 py-2 font-medium text-gray-600">Table</th>
                     <th class="text-left px-3 py-2 font-medium text-gray-600">Status</th>
                     <th class="text-left px-3 py-2 font-medium text-gray-600">Total</th>
+                    <th class="text-left px-3 py-2 font-medium text-gray-600">Payment</th>
                     <th class="text-left px-3 py-2 font-medium text-gray-600">Created</th>
                     <th class="text-right px-3 py-2 font-medium text-gray-600">Action</th>
                 </tr>
@@ -256,6 +257,7 @@ new #[Title('Orders')] class extends Component
                             </span>
                         </td>
                         <td class="px-3 py-2">{{ number_format((float) $order->total, 2) }}</td>
+                        <td class="px-3 py-2">{{ $order->payments->sortByDesc('id')->first()?->method?->description ?? '-' }}</td>
                         <td class="px-3 py-2">{{ $order->created_at->format('d M Y H:i') }}</td>
                         <td class="px-3 py-2 text-right">
                             <a href="{{ route('pos.order', $order) }}" class="inline-flex items-center gap-1 bg-indigo-600 text-white text-xs font-medium px-3 py-1.5 rounded" wire:navigate>
@@ -270,7 +272,7 @@ new #[Title('Orders')] class extends Component
                     </tr>
                 @empty
                     <tr class="border-t border-gray-100">
-                        <td colspan="6" class="px-3 py-6 text-center text-sm text-gray-500">No orders found.</td>
+                        <td colspan="7" class="px-3 py-6 text-center text-sm text-gray-500">No orders found.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -293,7 +295,7 @@ new #[Title('Orders')] class extends Component
         </div>
     </x-card>
 
-    <x-modal :show="$showDetailModal" title="Order Detail" close="closeOrderDetail" wide>
+    <x-modal :show="$showDetailModal" title="{{ $selectedOrder ? 'Order #'.$selectedOrder->id : 'Order Detail' }}" close="closeOrderDetail" wide>
         @if ($selectedOrder)
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-3 text-sm">
@@ -303,7 +305,7 @@ new #[Title('Orders')] class extends Component
                     <div><span class="text-gray-500">Created</span><p class="font-medium">{{ $selectedOrder->created_at->format('d M Y H:i') }}</p></div>
                 </div>
                 <x-table>
-                    <thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Item</th><th class="text-left px-3 py-2">Qty</th><th class="text-right px-3 py-2">Subtotal</th></tr></thead>
+                    <thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Item</th><th class="text-left px-3 py-2">Qty</th><th class="text-right px-3 py-2">Price</th><th class="text-right px-3 py-2">Subtotal</th><th class="text-left px-3 py-2">Notes</th></tr></thead>
                     <tbody>
                         @foreach ($selectedOrder->items as $line)
                             <tr class="border-t border-gray-100 align-top">
@@ -314,7 +316,9 @@ new #[Title('Orders')] class extends Component
                                     @endif
                                 </td>
                                 <td class="px-3 py-2">{{ $line->quantity }}</td>
+                                <td class="px-3 py-2 text-right">RM{{ number_format((float) $line->unit_price, 2) }}</td>
                                 <td class="px-3 py-2 text-right">RM{{ number_format((float) $line->subtotal, 2) }}</td>
+                                <td class="px-3 py-2">{{ $line->notes ?: '-' }}</td>
                             </tr>
                         @endforeach
                     </tbody>

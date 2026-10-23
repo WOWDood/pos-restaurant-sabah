@@ -85,7 +85,7 @@ it('opens order detail and only opens receipt print for paid orders', function (
     Livewire::test('pages::orders')
         ->call('openOrderDetail', $unpaid->id)
         ->assertSet('showDetailModal', true)
-        ->assertSee('Order Detail')
+        ->assertSee('Order #'.$unpaid->id)
         ->call('closeOrderDetail')
         ->call('openReceipt', $unpaid->id)
         ->assertSet('showReceiptModal', false)

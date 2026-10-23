@@ -980,12 +980,12 @@ new #[Title('POS / Cashier')] class extends Component
 
             <div>
                 <p class="text-sm font-medium text-gray-700 mb-2">Payment Method</p>
-                <div class="flex flex-wrap gap-2">
+                <div class="grid grid-cols-2 gap-2">
                     @forelse ($this->paymentMethods as $method)
                         <button
                             type="button"
                             wire:click="selectPaymentMethod({{ $method->id }})"
-                            class="rounded-full border px-4 py-2 text-sm {{ $selectedPaymentMethodId === $method->id ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700 hover:border-indigo-400' }}"
+                            class="rounded-lg border px-4 py-3 text-sm text-center {{ $selectedPaymentMethodId === $method->id ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700 hover:border-indigo-400' }}"
                         >
                             {{ $method->description }}
                         </button>

@@ -83,9 +83,9 @@ new #[Title('POS / Cashier')] class extends Component {
             <button class="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded">Search</button>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" wire:poll.10s>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" wire:poll.10s>
             @foreach ($this->tables as $table)
-                <div wire:click="openTable({{ $table->id }})" class="cursor-pointer bg-white border border-gray-200 rounded-lg p-4 text-center hover:shadow">
+                <div wire:click="openTable({{ $table->id }})" class="cursor-pointer bg-white border border-gray-200 rounded-lg p-5 text-center hover:border-indigo-300 hover:shadow-sm transition">
                     <p class="font-semibold text-gray-900 mb-2">{{ $table->name }}</p>
                     @if ($table->open_orders_count > 0)
                         <span class="inline-block bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-1 rounded">
@@ -101,7 +101,15 @@ new #[Title('POS / Cashier')] class extends Component {
 
     {{-- Table action modal --}}
     <x-modal :show="$showTableModal" title="{{ \App\Models\RestaurantTable::find($selectedTableId)?->name }}" close="$set('showTableModal', false)">
-        <p class="text-sm text-amber-600 mb-4">{{ \App\Models\RestaurantTable::find($selectedTableId)?->orders()->whereIn('status', \App\Models\Order::OPEN_STATUSES)->count() ?? 0 }} open order(s) found</p>
+        <div class="flex items-start gap-3 mb-4">
+            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <flux:icon.clock class="w-5 h-5" />
+            </span>
+            <div>
+                <p class="font-medium text-gray-900">{{ \App\Models\RestaurantTable::find($selectedTableId)?->name }}</p>
+                <p class="text-sm text-amber-600">{{ \App\Models\RestaurantTable::find($selectedTableId)?->orders()->whereIn('status', \App\Models\Order::OPEN_STATUSES)->count() ?? 0 }} open order(s) found</p>
+            </div>
+        </div>
         <p class="text-sm text-gray-500 mb-4">What would you like to do?</p>
         <div class="space-y-2">
             <button wire:click="viewOpenOrders" class="w-full bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">View Open Orders</button>
@@ -111,8 +119,16 @@ new #[Title('POS / Cashier')] class extends Component {
     </x-modal>
 
     {{-- Create new order confirmation --}}
-    <x-modal :show="$showCreateModal" title="{{ \App\Models\RestaurantTable::find($selectedTableId)?->name }}" close="$set('showCreateModal', false)">
-        <p class="text-sm text-gray-500 mb-4">Create a new order for this table?</p>
+    <x-modal :show="$showCreateModal" title="Create New Order?" close="$set('showCreateModal', false)">
+        <div class="flex items-start gap-3 mb-5">
+            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                <flux:icon.clock class="w-5 h-5" />
+            </span>
+            <div>
+                <p class="text-sm text-gray-500">Table: <span class="font-medium text-gray-900">{{ \App\Models\RestaurantTable::find($selectedTableId)?->name }}</span></p>
+                <p class="text-sm text-gray-500 mt-1">Create a new order for this table?</p>
+            </div>
+        </div>
         <div class="flex justify-end gap-2">
             <button wire:click="cancelTable" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
             <button wire:click="createOrder" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">Create New Order</button>
