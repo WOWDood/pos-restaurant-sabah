@@ -40,15 +40,12 @@
                         ['Dashboard', route('dashboard'), request()->routeIs('dashboard')],
                         ['Orders', route('orders'), request()->routeIs('orders')],
                         ['POS', route('pos'), request()->routeIs('pos')],
-                        ['Test Drawing', '#', false],
                     ] as [$label, $href, $active])
                         <a href="{{ $href }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ $active ? 'bg-indigo-500' : '' }}" @if($href !== '#' && $label !== 'Orders') wire:navigate @endif>
                             @if ($label === 'Orders')
                                 <flux:icon.document-text class="w-4 h-4 text-white opacity-80" />
                             @elseif ($label === 'POS')
                                 <flux:icon.shopping-bag class="w-4 h-4 text-white opacity-80" />
-                            @elseif ($label === 'Test Drawing')
-                                <flux:icon.pencil class="w-4 h-4 text-white opacity-80" />
                             @else
                                 <flux:icon.home class="w-4 h-4 text-white opacity-80" />
                             @endif
