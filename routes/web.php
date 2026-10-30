@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\CustomerOrderController;
 use App\Models\BusinessSetting;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+
+Route::get('/order/{table}', [CustomerOrderController::class, 'create'])->name('customer-order.create');
+Route::get('/menu/photo/{photo}', [CustomerOrderController::class, 'photo'])->name('customer-order.photo');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

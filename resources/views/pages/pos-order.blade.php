@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\PriceOrderItem;
 use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Item;
@@ -103,18 +104,7 @@ new #[Title('POS / Cashier')] class extends Component
             return 0;
         }
 
-        $unitPrice = (float) $item->unit_price;
-
-        foreach ($item->modifierGroups as $group) {
-            $selectedIds = $this->selectedOptionIds($group);
-            foreach ($group->options as $option) {
-                if (in_array($option->id, $selectedIds, true)) {
-                    $unitPrice += (float) $option->price_adjustment;
-                }
-            }
-        }
-
-        return round($unitPrice, 2);
+        return app(PriceOrderItem::class)->calculate($item, $this->selections)['unit_price'];
     }
 
     public function getPreviewItemPriceProperty(): float
@@ -129,14 +119,7 @@ new #[Title('POS / Cashier')] class extends Component
             return false;
         }
 
-        foreach ($item->modifierGroups as $group) {
-            $count = count($this->selectedOptionIds($group));
-            if ($count < $group->min_select || $count > $group->max_select) {
-                return false;
-            }
-        }
-
-        return true;
+        return app(PriceOrderItem::class)->calculate($item, $this->selections)['errors'] === [];
     }
 
     public function openAddItemModal(): void
@@ -286,48 +269,19 @@ new #[Title('POS / Cashier')] class extends Component
             return;
         }
 
-        $modifiers = [];
-        $unitPrice = (float) $item->unit_price;
-        $hasErrors = false;
-
-        foreach ($item->modifierGroups as $group) {
-            $selectedIds = $this->selectedOptionIds($group);
-            $count = count($selectedIds);
-
-            if ($count < $group->min_select) {
-                $this->addError("selections.{$group->id}", "{$group->name}: choose at least {$group->min_select} option(s).");
-                $hasErrors = true;
-            }
-
-            if ($count > $group->max_select) {
-                $this->addError("selections.{$group->id}", "{$group->name}: choose at most {$group->max_select} option(s).");
-                $hasErrors = true;
-            }
-
-            foreach ($group->options as $option) {
-                if (! in_array($option->id, $selectedIds, true)) {
-                    continue;
-                }
-
-                $unitPrice += (float) $option->price_adjustment;
-                $modifiers[] = [
-                    'group_id' => $group->id,
-                    'group_name' => $group->name,
-                    'option_id' => $option->id,
-                    'name_en' => $option->name_en,
-                    'name_zh' => $option->name_zh,
-                    'price_adjustment' => (float) $option->price_adjustment,
-                ];
-            }
+        $priced = app(PriceOrderItem::class)->calculate($item, $this->selections);
+        foreach ($priced['errors'] as $groupId => $message) {
+            $this->addError("selections.{$groupId}", $message);
         }
 
-        if ($hasErrors) {
+        if ($priced['errors'] !== []) {
             $this->addTab = 'selected';
 
             return;
         }
 
-        $unitPrice = round($unitPrice, 2);
+        $unitPrice = $priced['unit_price'];
+        $modifiers = $priced['modifiers'];
         $quantity = max(1, (int) $this->quantity);
 
         $lineData = [
@@ -554,13 +508,7 @@ new #[Title('POS / Cashier')] class extends Component
      */
     private function selectedOptionIds(\App\Models\ModifierGroup $group): array
     {
-        $raw = $this->selections[$group->id] ?? [];
-        $raw = is_array($raw) ? $raw : [$raw];
-
-        $validIds = $group->options->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $selected = array_map('intval', $raw);
-
-        return array_values(array_unique(array_intersect($selected, $validIds)));
+        return app(PriceOrderItem::class)->selectedOptionIds($group, $this->selections);
     }
 
     private function ensureEditable(): bool
