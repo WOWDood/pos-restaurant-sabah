@@ -56,7 +56,7 @@ new #[Title('Profile')] class extends Component {
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                 <input type="password" wire:model="password" class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                @error('password') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('password') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>

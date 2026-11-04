@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => bcrypt('password'),
+            'user_type' => User::TYPE_ADMIN,
         ]);
 
         $this->call([

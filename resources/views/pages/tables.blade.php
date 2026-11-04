@@ -122,7 +122,7 @@ new #[Title('Table Search')] class extends Component {
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <input type="text" wire:model="name" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                @error('name') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('name') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
         <div class="mt-5 flex justify-end gap-2">
@@ -133,7 +133,7 @@ new #[Title('Table Search')] class extends Component {
 
     <x-modal :show="(bool) $deleteId" title="Delete Table" close="$set('deleteId', null)">
         <p class="text-sm text-gray-700 mb-4">Delete this table?</p>
-        @error('delete') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
+        @error('delete') <p class="text-sm text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
             <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>

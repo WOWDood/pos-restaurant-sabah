@@ -116,10 +116,10 @@ new #[Title('Payment Method Search')] class extends Component {
                         <td class="px-3 py-2">{{ $pm->description }}</td>
                         <td class="px-3 py-2">{{ $pm->sort_order }}</td>
                         <td class="px-3 py-2">
-                            <span class="px-2 py-0.5 rounded text-xs {{ $pm->active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ $pm->active ? 'Active' : 'Inactive' }}</span>
+                            <span class="px-2 py-0.5 rounded text-sm {{ $pm->active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ $pm->active ? 'Active' : 'Inactive' }}</span>
                         </td>
                         <td class="px-3 py-2">
-                            <span class="px-2 py-0.5 rounded text-xs {{ $pm->ref_required ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600' }}">{{ $pm->ref_required ? 'Yes' : 'No' }}</span>
+                            <span class="px-2 py-0.5 rounded text-sm {{ $pm->ref_required ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600' }}">{{ $pm->ref_required ? 'Yes' : 'No' }}</span>
                         </td>
                         <td class="px-3 py-2">
                             <button wire:click="openEdit({{ $pm->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
@@ -152,7 +152,7 @@ new #[Title('Payment Method Search')] class extends Component {
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <input type="text" wire:model="description" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                @error('description') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('description') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
@@ -175,7 +175,7 @@ new #[Title('Payment Method Search')] class extends Component {
 
     <x-modal :show="(bool) $deleteId" title="Delete Payment Method" close="$set('deleteId', null)">
         <p class="text-sm text-gray-700 mb-4">Delete this payment method?</p>
-        @error('delete') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
+        @error('delete') <p class="text-sm text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
             <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>

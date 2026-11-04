@@ -72,6 +72,19 @@ it('adds an item without modifiers and updates the order total', function () {
         ->and((float) $order->fresh()->total)->toBe(16.0);
 });
 
+it('does not save an item when the order is paid while the item form is open', function () {
+    $order = newPosOrder($this->user, $this->table);
+    $item = Item::factory()->create(['category_id' => $this->category->id, 'active' => true]);
+    $component = Livewire::test('pages::pos-order', ['order' => $order])
+        ->call('openAddItemModal')
+        ->call('selectItem', $item->id);
+
+    $order->update(['status' => Order::STATUS_PAID]);
+
+    $component->call('addToOrder')->assertHasErrors('order');
+    expect($order->items()->count())->toBe(0);
+});
+
 it('adds an item with modifiers and uses adjustments in the price', function () {
     $order = newPosOrder($this->user, $this->table);
     $item = Item::factory()->create([

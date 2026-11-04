@@ -3,13 +3,13 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-gray-100 text-gray-900" x-data="{ sidebarOpen: false }">
+    <body class="min-h-screen bg-gray-100 text-sm text-gray-900" x-data="{ sidebarOpen: false }">
         {{-- Top header bar --}}
         <header class="fixed top-0 left-0 right-0 h-12 bg-indigo-600 flex items-center px-4 text-white print:hidden z-50">
             <button type="button" class="mr-3 inline-flex items-center justify-center rounded p-1 hover:bg-indigo-500 md:hidden" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle navigation">
                 <flux:icon.bars-3 class="w-5 h-5" />
             </button>
-            <span class="font-semibold text-sm">Livewire Shop</span>
+            <span class="font-semibold text-sm">POS System XE</span>
         </header>
 
         <div class="flex min-h-screen print:block">
@@ -54,6 +54,12 @@
                     @endforeach
 
                     {{-- Setup (expandable) --}}
+                    @can('manage-users')
+                        <a href="{{ route('admin.users') }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ request()->routeIs('admin.users') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                            <flux:icon.user class="w-4 h-4 text-white opacity-80" />
+                            {{ __('Manage Users') }}
+                        </a>
+                    @endcan
                     <details class="group" open>
                         <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
                             <flux:icon.cog-6-tooth class="w-4 h-4 text-white opacity-80" />

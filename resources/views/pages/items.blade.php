@@ -345,10 +345,10 @@ new #[Title('Item Search')] class extends Component {
                         <td class="px-3 py-2">{{ $item->category->code ?? '' }}</td>
                         <td class="px-3 py-2">{{ number_format((float)$item->unit_price, 2) }}</td>
                         <td class="px-3 py-2">
-                            <span class="px-2 py-0.5 rounded text-xs {{ $item->active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ $item->active ? 'Yes' : 'No' }}</span>
+                            <span class="px-2 py-0.5 rounded text-sm {{ $item->active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ $item->active ? 'Yes' : 'No' }}</span>
                         </td>
                         <td class="px-3 py-2">
-                            <span class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">{{ $item->type ?? 'General' }}</span>
+                            <span class="px-2 py-0.5 rounded text-sm bg-gray-100 text-gray-600">{{ $item->type ?? 'General' }}</span>
                         </td>
                         <td class="px-3 py-2">
                             <button wire:click="openPhotos({{ $item->id }})" class="text-purple-600 hover:underline mr-2">Photos</button>
@@ -384,7 +384,7 @@ new #[Title('Item Search')] class extends Component {
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
                 <input type="text" wire:model="code" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                @error('code') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('code') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
@@ -394,12 +394,12 @@ new #[Title('Item Search')] class extends Component {
                         <option value="{{ $cat->id }}">{{ $cat->code }}</option>
                     @endforeach
                 </select>
-                @error('category_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('category_id') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <input type="text" wire:model="description" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                @error('description') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('description') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -408,7 +408,7 @@ new #[Title('Item Search')] class extends Component {
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
                 <input type="number" step="0.01" wire:model="unit_price" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                @error('unit_price') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('unit_price') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2 text-sm">
@@ -428,7 +428,7 @@ new #[Title('Item Search')] class extends Component {
     {{-- Delete Item Modal --}}
     <x-modal :show="(bool) $deleteId" title="Delete Item" close="$set('deleteId', null)">
         <p class="text-sm text-gray-700 mb-4">Delete this item?</p>
-        @error('delete') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
+        @error('delete') <p class="text-sm text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
             <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>
@@ -445,10 +445,10 @@ new #[Title('Item Search')] class extends Component {
                         <span class="ml-1 text-sm font-medium text-indigo-600">Choose photos</span>
                         <input type="file" wire:model="photoFiles" multiple accept="image/*" class="hidden" />
                     </label>
-                    <p class="text-xs text-gray-400">Allowed: JPG, PNG, WEBP. Max 5 MB per image.</p>
-                    <div wire:loading wire:target="photoFiles" class="text-xs text-gray-500">Preparing...</div>
-                    @error('photoFiles') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                    @error('photoFiles.*') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                    <p class="text-sm text-gray-400">Allowed: JPG, PNG, WEBP. Max 5 MB per image.</p>
+                    <div wire:loading wire:target="photoFiles" class="text-sm text-gray-500">Preparing...</div>
+                    @error('photoFiles') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                    @error('photoFiles.*') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
 
                     @if (count($photoFiles))
                         <ul class="space-y-1">
@@ -469,14 +469,14 @@ new #[Title('Item Search')] class extends Component {
                     @foreach ($this->photoItem->photos as $photo)
                         <div class="border border-gray-200 rounded p-2">
                             <img src="{{ \Illuminate\Support\Facades\Storage::url($photo->path) }}" class="w-full h-24 object-cover rounded mb-1" alt="" />
-                            <p class="text-xs text-gray-500 truncate mb-1">{{ basename($photo->path) }}</p>
+                            <p class="text-sm text-gray-500 truncate mb-1">{{ basename($photo->path) }}</p>
                             <div class="flex items-center justify-between">
                                 @if ($photo->is_primary)
-                                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">Primary</span>
+                                    <span class="text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">Primary</span>
                                 @else
-                                    <button wire:click="setPrimaryPhoto({{ $photo->id }})" class="text-xs text-gray-600 hover:underline">Set Primary</button>
+                                    <button wire:click="setPrimaryPhoto({{ $photo->id }})" class="text-sm text-gray-600 hover:underline">Set Primary</button>
                                 @endif
-                                <button wire:click="deletePhoto({{ $photo->id }})" class="text-xs text-red-600 hover:underline">Delete</button>
+                                <button wire:click="deletePhoto({{ $photo->id }})" class="text-sm text-red-600 hover:underline">Delete</button>
                             </div>
                         </div>
                     @endforeach
@@ -495,30 +495,30 @@ new #[Title('Item Search')] class extends Component {
                         <h3 class="text-sm font-semibold mb-2">{{ $editingGroupId ? 'Edit Group' : 'Add Group' }}</h3>
                         <div class="space-y-2">
                             <div>
-                                <label class="block text-xs text-gray-500 mb-1">Group name</label>
+                                <label class="block text-sm text-gray-500 mb-1">Group name</label>
                                 <input type="text" wire:model="newGroupName" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                             </div>
                             <div class="grid grid-cols-4 gap-2">
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Minimum choices</label>
+                                    <label class="block text-sm text-gray-500 mb-1">Minimum choices</label>
                                     <input type="number" wire:model="newGroupMin" min="0" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Maximum choices</label>
+                                    <label class="block text-sm text-gray-500 mb-1">Maximum choices</label>
                                     <input type="number" wire:model="newGroupMax" min="1" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Sort order</label>
+                                    <label class="block text-sm text-gray-500 mb-1">Sort order</label>
                                     <input type="number" wire:model="newGroupSort" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                                 </div>
                             </div>
-                            <p class="text-xs text-gray-400">Set both to 1 for a required single choice.</p>
+                            <p class="text-sm text-gray-400">Set both to 1 for a required single choice.</p>
                         </div>
                         <div class="mt-3 flex gap-2">
                             <button wire:click="saveGroup" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded">{{ $editingGroupId ? 'Update Group' : 'Add Group' }}</button>
                             <button wire:click="cancelEditGroup" class="px-3 py-1 text-sm border border-gray-300 rounded">Cancel</button>
                         </div>
-                        @error('newGroupName') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                        @error('newGroupName') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
                 @endif
 
@@ -526,19 +526,19 @@ new #[Title('Item Search')] class extends Component {
                     <div class="border border-gray-200 rounded-lg p-4">
                         @if ($editingGroupId === $group->id)
                             <div class="space-y-2">
-                                <label class="block text-xs text-gray-500 mb-1">Group name</label>
+                                <label class="block text-sm text-gray-500 mb-1">Group name</label>
                                 <input type="text" wire:model="newGroupName" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Minimum choices</label>
+                                        <label class="block text-sm text-gray-500 mb-1">Minimum choices</label>
                                         <input type="number" wire:model="newGroupMin" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                                     </div>
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Maximum choices</label>
+                                        <label class="block text-sm text-gray-500 mb-1">Maximum choices</label>
                                         <input type="number" wire:model="newGroupMax" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                                     </div>
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Sort order</label>
+                                        <label class="block text-sm text-gray-500 mb-1">Sort order</label>
                                         <input type="number" wire:model="newGroupSort" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
                                     </div>
                                 </div>
@@ -551,13 +551,13 @@ new #[Title('Item Search')] class extends Component {
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center gap-2">
                                     <span class="font-medium text-sm">{{ $group->name }}</span>
-                                    <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                                    <span class="text-sm bg-red-100 text-red-700 px-2 py-0.5 rounded">
                                         Required: choose {{ $group->min_select === $group->max_select ? $group->max_select : $group->min_select . '-' . $group->max_select }}
                                     </span>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button wire:click="openEditGroup({{ $group->id }})" class="text-xs text-blue-600 hover:underline">Edit</button>
-                                    <button wire:click="deleteGroup({{ $group->id }})" class="text-xs text-red-600 hover:underline">Delete</button>
+                                    <button wire:click="openEditGroup({{ $group->id }})" class="text-sm text-blue-600 hover:underline">Edit</button>
+                                    <button wire:click="deleteGroup({{ $group->id }})" class="text-sm text-red-600 hover:underline">Delete</button>
                                 </div>
                             </div>
                         @endif
@@ -568,23 +568,23 @@ new #[Title('Item Search')] class extends Component {
                                     <div class="border-t border-gray-100 pt-2 space-y-2">
                                         <div class="grid grid-cols-2 gap-2">
                                             <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Name (EN)</label>
+                                                <label class="block text-sm text-gray-500 mb-1">Name (EN)</label>
                                                 <input type="text" wire:model="newOptionEn" class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                                             </div>
                                             <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Name (ZH)</label>
+                                                <label class="block text-sm text-gray-500 mb-1">Name (ZH)</label>
                                                 <input type="text" wire:model="newOptionZh" class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                                             </div>
                                             <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Price adjustment (RM)</label>
+                                                <label class="block text-sm text-gray-500 mb-1">Price adjustment (RM)</label>
                                                 <input type="number" step="0.01" wire:model="newOptionPrice" class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                                             </div>
                                             <div>
-                                                <label class="block text-xs text-gray-500 mb-1">Sort order</label>
+                                                <label class="block text-sm text-gray-500 mb-1">Sort order</label>
                                                 <input type="number" wire:model="newOptionSort" class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                                             </div>
                                         </div>
-                                        <label class="flex items-center gap-1 text-xs">
+                                        <label class="flex items-center gap-1 text-sm">
                                             <input type="checkbox" wire:model="newOptionBase" /> Base option
                                         </label>
                                         <div class="flex gap-2">
@@ -602,8 +602,8 @@ new #[Title('Item Search')] class extends Component {
                                             <span class="text-gray-500 ml-2">+RM{{ number_format((float)$opt->price_adjustment, 2) }}</span>
                                         </div>
                                         <div class="flex gap-2">
-                                            <button wire:click="openEditOption({{ $opt->id }})" class="text-xs text-blue-600 hover:underline">Edit</button>
-                                            <button wire:click="deleteOption({{ $opt->id }})" class="text-xs text-red-600 hover:underline">Delete</button>
+                                            <button wire:click="openEditOption({{ $opt->id }})" class="text-sm text-blue-600 hover:underline">Edit</button>
+                                            <button wire:click="deleteOption({{ $opt->id }})" class="text-sm text-red-600 hover:underline">Delete</button>
                                         </div>
                                     </div>
                                 @endif
@@ -614,23 +614,23 @@ new #[Title('Item Search')] class extends Component {
                             <div class="border-t border-gray-200 pt-3 space-y-2">
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Name (EN)</label>
+                                        <label class="block text-sm text-gray-500 mb-1">Name (EN)</label>
                                         <input type="text" wire:model="newOptionEn" class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                                     </div>
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Name (ZH)</label>
+                                        <label class="block text-sm text-gray-500 mb-1">Name (ZH)</label>
                                         <input type="text" wire:model="newOptionZh" class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                                     </div>
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Price adjustment (RM)</label>
+                                        <label class="block text-sm text-gray-500 mb-1">Price adjustment (RM)</label>
                                         <input type="number" step="0.01" wire:model="newOptionPrice" class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                                     </div>
                                     <div>
-                                        <label class="block text-xs text-gray-500 mb-1">Sort order</label>
+                                        <label class="block text-sm text-gray-500 mb-1">Sort order</label>
                                         <input type="number" wire:model="newOptionSort" class="w-full rounded border border-gray-300 px-2 py-1 text-sm" />
                                     </div>
                                 </div>
-                                <label class="flex items-center gap-1 text-xs">
+                                <label class="flex items-center gap-1 text-sm">
                                     <input type="checkbox" wire:model="newOptionBase" /> Base option
                                 </label>
                                 <div class="flex gap-2">
@@ -639,7 +639,7 @@ new #[Title('Item Search')] class extends Component {
                                 </div>
                             </div>
                         @else
-                            <button wire:click="$set('addingOptionForGroup', {{ $group->id }})" class="text-xs text-green-600 hover:underline">+ Add Option</button>
+                            <button wire:click="$set('addingOptionForGroup', {{ $group->id }})" class="text-sm text-green-600 hover:underline">+ Add Option</button>
                         @endif
                     </div>
                 @endforeach

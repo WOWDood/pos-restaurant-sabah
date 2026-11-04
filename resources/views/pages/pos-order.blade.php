@@ -233,11 +233,21 @@ new #[Title('POS / Cashier')] class extends Component
             return;
         }
 
-        $line = $this->order->items()->findOrFail($this->removingLineId);
-        $line->delete();
+        $removed = DB::transaction(function (): bool {
+            $this->order = Order::query()->lockForUpdate()->findOrFail($this->order->id);
+            if (! $this->ensureEditable()) {
+                return false;
+            }
 
-        $this->removingLineId = null;
-        $this->recalculateTotal();
+            $this->order->items()->findOrFail($this->removingLineId)->delete();
+            $this->recalculateTotal();
+
+            return true;
+        });
+
+        if ($removed) {
+            $this->removingLineId = null;
+        }
     }
 
     public function addToOrder(): void
@@ -297,13 +307,26 @@ new #[Title('POS / Cashier')] class extends Component
 
         $wasEditing = (bool) $this->editingLineId;
 
-        if ($wasEditing) {
-            $this->order->items()->findOrFail($this->editingLineId)->update($lineData);
-        } else {
-            $this->order->items()->create($lineData);
-        }
+        $saved = DB::transaction(function () use ($wasEditing, $lineData): bool {
+            $this->order = Order::query()->lockForUpdate()->findOrFail($this->order->id);
+            if (! $this->ensureEditable()) {
+                return false;
+            }
 
-        $this->recalculateTotal();
+            if ($wasEditing) {
+                $this->order->items()->findOrFail($this->editingLineId)->update($lineData);
+            } else {
+                $this->order->items()->create($lineData);
+            }
+
+            $this->recalculateTotal();
+
+            return true;
+        });
+
+        if (! $saved) {
+            return;
+        }
         $this->resetAddItemForm();
 
         if ($wasEditing) {
@@ -313,7 +336,7 @@ new #[Title('POS / Cashier')] class extends Component
         }
     }
 
-    public function recalculateTotal(): void
+    private function recalculateTotal(): void
     {
         $total = $this->order->items()->sum('subtotal');
         $this->order->update(['total' => $total]);
@@ -581,7 +604,7 @@ new #[Title('POS / Cashier')] class extends Component
             <div>
                 <p class="text-sm text-gray-500">Table: {{ $order->table->name ?? '-' }}</p>
                 <p class="text-sm font-medium text-gray-900">Order #{{ $order->id }}</p>
-                <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium {{ Order::statusBadgeClasses($order->status) }}">{{ Order::statusLabel($order->status) }}</span>
+                <span class="inline-block mt-1 px-2 py-0.5 rounded text-sm font-medium {{ Order::statusBadgeClasses($order->status) }}">{{ Order::statusLabel($order->status) }}</span>
             </div>
             <p class="text-lg font-bold text-gray-900">RM{{ number_format((float) $order->total, 2) }}</p>
         </div>
@@ -604,7 +627,7 @@ new #[Title('POS / Cashier')] class extends Component
                         <td class="px-3 py-2">
                             <p class="font-medium text-gray-900">{{ $line->item_code }} - {{ $line->item_description }}</p>
                             @if (! empty($line->modifiers))
-                                <div class="text-xs text-gray-500 mt-1 space-y-0.5">
+                                <div class="text-sm text-gray-500 mt-1 space-y-0.5">
                                     @foreach (collect($line->modifiers)->groupBy('group_name') as $groupName => $modifiers)
                                         <p>
                                             <span class="font-medium">{{ $groupName }}:</span>
@@ -614,7 +637,7 @@ new #[Title('POS / Cashier')] class extends Component
                                 </div>
                             @endif
                             @if ($line->notes)
-                                <p class="text-xs italic text-gray-500 mt-1">Note: {{ $line->notes }}</p>
+                                <p class="text-sm italic text-gray-500 mt-1">Note: {{ $line->notes }}</p>
                             @endif
                         </td>
                         <td class="px-3 py-2 whitespace-nowrap">RM{{ number_format((float) $line->unit_price, 2) }}</td>
@@ -673,7 +696,7 @@ new #[Title('POS / Cashier')] class extends Component
             >
                 Selected Item
                 @if ($selectedItemId)
-                    <span class="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-indigo-100 text-indigo-600 text-xs">{{ $selectedItemId ? 1 : 0 }}</span>
+                    <span class="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-indigo-100 text-indigo-600 text-sm">{{ $selectedItemId ? 1 : 0 }}</span>
                 @endif
             </button>
         </div>
@@ -745,12 +768,12 @@ new #[Title('POS / Cashier')] class extends Component
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
                             <input type="number" min="1" wire:model.live="quantity" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                            @error('quantity') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                            @error('quantity') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                             <input type="text" wire:model="notes" placeholder="Special instructions..." class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                            @error('notes') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                            @error('notes') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
@@ -759,11 +782,11 @@ new #[Title('POS / Cashier')] class extends Component
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="font-semibold text-sm text-gray-900">{{ $group->name }}</span>
                                 @if ($group->min_select > 0)
-                                    <span class="bg-red-100 text-red-600 text-xs font-medium px-2 py-0.5 rounded">
+                                    <span class="bg-red-100 text-red-600 text-sm font-medium px-2 py-0.5 rounded">
                                         Required - Pick {{ $group->min_select === $group->max_select ? $group->min_select : $group->min_select . '-' . $group->max_select }}
                                     </span>
                                 @else
-                                    <span class="text-xs text-gray-500">Optional</span>
+                                    <span class="text-sm text-gray-500">Optional</span>
                                 @endif
                             </div>
                             <div class="space-y-2">
@@ -787,14 +810,14 @@ new #[Title('POS / Cashier')] class extends Component
                                         @endif
                                         <span>{{ $option->name_en }}@if ($option->name_zh) / {{ $option->name_zh }}@endif</span>
                                         @if ((float) $option->price_adjustment !== 0.0)
-                                            <span class="text-xs whitespace-nowrap {{ in_array((int) $option->id, $this->selectedOptionIds($group), true) ? 'text-indigo-100' : 'text-gray-500' }}">
+                                            <span class="text-sm whitespace-nowrap {{ in_array((int) $option->id, $this->selectedOptionIds($group), true) ? 'text-indigo-100' : 'text-gray-500' }}">
                                                 {{ (float) $option->price_adjustment > 0 ? '+' : '-' }}RM{{ number_format(abs((float) $option->price_adjustment), 2) }}
                                             </span>
                                         @endif
                                     </label>
                                 @endforeach
                             </div>
-                            @error("selections.{$group->id}") <p class="text-xs text-red-600 mt-2">{{ $message }}</p> @enderror
+                            @error("selections.{$group->id}") <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
                         </div>
                     @endforeach
 
@@ -809,7 +832,7 @@ new #[Title('POS / Cashier')] class extends Component
                         </div>
                     </div>
 
-                    @error('selectedItemId') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('selectedItemId') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
 
                     <div class="flex justify-end">
                         <button
@@ -833,7 +856,7 @@ new #[Title('POS / Cashier')] class extends Component
 
     <x-modal :show="(bool) $removingLineId" title="Remove Item" close="cancelRemove">
         <p class="text-sm text-gray-700 mb-4">Remove this item from the order?</p>
-        @error('order') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
+        @error('order') <p class="text-sm text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelRemove" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
             <button wire:click="removeLine" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Remove</button>
@@ -863,14 +886,14 @@ new #[Title('POS / Cashier')] class extends Component
                         <p class="text-sm text-gray-500">No active payment methods are available.</p>
                     @endforelse
                 </div>
-                @error('payment') <p class="text-xs text-red-600 mt-2">{{ $message }}</p> @enderror
+                @error('payment') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
             </div>
 
             @if ($this->selectedPaymentMethod?->ref_required)
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Reference</label>
                     <input type="text" wire:model="paymentReference" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                    @error('paymentReference') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    @error('paymentReference') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
             @endif
 

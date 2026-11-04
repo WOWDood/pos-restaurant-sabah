@@ -10,6 +10,7 @@ Route::get('/order/{table}', [CustomerOrderController::class, 'create'])->name('
 Route::get('/menu/photo/{photo}', [CustomerOrderController::class, 'photo'])->name('customer-order.photo');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::livewire('admin/users', 'pages::manage-users')->middleware('can:manage-users')->name('admin.users');
     Route::get('dashboard', function () {
         $settings = BusinessSetting::pluck('value', 'key');
 

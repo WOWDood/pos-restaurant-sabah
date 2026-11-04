@@ -155,17 +155,17 @@ new #[Title('Category Search')] class extends Component {
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
                 <input type="text" wire:model="code" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                @error('code') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('code') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <input type="text" wire:model="description" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                @error('description') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('description') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
                 <input type="number" wire:model="sort_order" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-                @error('sort_order') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('sort_order') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
         <div class="mt-5 flex justify-end gap-2">
@@ -176,7 +176,7 @@ new #[Title('Category Search')] class extends Component {
 
     <x-modal :show="(bool) $deleteId" title="Delete Category" close="$set('deleteId', null)">
         <p class="text-sm text-gray-700 mb-4">Delete this category?</p>
-        @error('delete') <p class="text-xs text-red-600 mb-2">{{ $message }}</p> @enderror
+        @error('delete') <p class="text-sm text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
             <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>

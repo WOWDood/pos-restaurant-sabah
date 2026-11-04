@@ -42,16 +42,16 @@ new #[Title('Table QR Codes')] class extends Component {
     <div id="qr-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 qr-grid">
         @foreach ($this->tables as $table)
             @php
-                $url = url('/order/' . $table->id);
+                $url = route('customer-order.create', $table);
                 $svg = $writer->writeString($url);
             @endphp
             <x-card class="qr-card" id="qr-card-{{ $table->id }}">
                 <div class="text-center">
                     <p class="font-semibold text-gray-900 mb-1">{{ $table->name }}</p>
-                    <p class="text-xs text-gray-500 mb-2">Scan to order</p>
+                    <p class="text-sm text-gray-500 mb-2">Scan to order</p>
                     <div class="flex justify-center mb-2">{!! $svg !!}</div>
-                    <p class="text-xs text-gray-400 break-all">{{ $url }}</p>
-                    <button onclick="printOne({{ $table->id }})" class="mt-2 text-xs text-indigo-600 hover:underline print-hidden">Print</button>
+                    <p class="text-sm text-gray-400 break-all">{{ $url }}</p>
+                    <button onclick="printOne({{ $table->id }})" class="mt-2 text-sm text-indigo-600 hover:underline print-hidden">Print</button>
                 </div>
             </x-card>
         @endforeach

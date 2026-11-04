@@ -174,7 +174,7 @@ new #[Title('Orders')] class extends Component
                         <td class="px-3 py-2">#{{ $order->id }}</td>
                         <td class="px-3 py-2">{{ $order->table->name ?? '-' }}</td>
                         <td class="px-3 py-2">
-                            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium {{ Order::statusBadgeClasses($order->status) }}">
+                            <span class="inline-block px-2 py-0.5 rounded text-sm font-medium {{ Order::statusBadgeClasses($order->status) }}">
                                 {{ Order::statusLabel($order->status) }}
                             </span>
                         </td>
@@ -182,13 +182,13 @@ new #[Title('Orders')] class extends Component
                         <td class="px-3 py-2">{{ $order->payments->sortByDesc('id')->first()?->method?->description ?? '-' }}</td>
                         <td class="px-3 py-2">{{ $order->created_at->format('d M Y H:i') }}</td>
                         <td class="px-3 py-2 text-right">
-                            <a href="{{ route('pos.order', $order) }}" class="inline-flex items-center gap-1 bg-indigo-600 text-white text-xs font-medium px-3 py-1.5 rounded" wire:navigate>
+                            <a href="{{ route('pos.order', $order) }}" class="inline-flex items-center gap-1 bg-indigo-600 text-white text-sm font-medium px-3 py-1.5 rounded" wire:navigate>
                                 <flux:icon.list-bullet class="w-3.5 h-3.5" />
                                 Open
                             </a>
-                            <button wire:click="openOrderDetail({{ $order->id }})" class="ml-2 text-xs text-gray-600 hover:underline">View</button>
+                            <button wire:click="openOrderDetail({{ $order->id }})" class="ml-2 text-sm text-gray-600 hover:underline">View</button>
                             @if ($order->status === Order::STATUS_PAID)
-                                <button wire:click="openReceipt({{ $order->id }})" class="ml-2 text-xs text-indigo-600 hover:underline">Print</button>
+                                <button wire:click="openReceipt({{ $order->id }})" class="ml-2 text-sm text-indigo-600 hover:underline">Print</button>
                             @endif
                         </td>
                     </tr>
@@ -234,7 +234,7 @@ new #[Title('Orders')] class extends Component
                                 <td class="px-3 py-2">
                                     <p>{{ $line->item_description }}</p>
                                     @if (! empty($line->modifiers))
-                                        <p class="text-xs text-gray-500">{{ collect($line->modifiers)->pluck('name_en')->join(', ') }}</p>
+                                        <p class="text-sm text-gray-500">{{ collect($line->modifiers)->pluck('name_en')->join(', ') }}</p>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2">{{ $line->quantity }}</td>

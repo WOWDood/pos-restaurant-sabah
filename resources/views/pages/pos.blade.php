@@ -88,7 +88,7 @@ new #[Title('POS / Cashier')] class extends Component {
                 <div wire:click="openTable({{ $table->id }})" class="cursor-pointer bg-white border border-gray-200 rounded-lg p-5 text-center hover:border-indigo-300 hover:shadow-sm transition">
                     <p class="font-semibold text-gray-900 mb-2">{{ $table->name }}</p>
                     @if ($table->open_orders_count > 0)
-                        <span class="inline-block bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-1 rounded">
+                        <span class="inline-block bg-yellow-100 text-yellow-700 text-sm font-medium px-2 py-1 rounded">
                             {{ $table->open_orders_count }} order(s)
                         </span>
                     @else
