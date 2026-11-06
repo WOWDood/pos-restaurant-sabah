@@ -61,6 +61,32 @@ select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
 }
 
+.xe-logo {
+    display: inline-block;
+    position: relative;
+    flex-shrink: 0;
+    width: var(--xe-logo-width, 150px);
+    max-width: 100%;
+    aspect-ratio: 3 / 1;
+    overflow: hidden;
+    vertical-align: middle;
+    background: #1f1f1f;
+}
+.xe-logo img {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    transform: translateY(-50%);
+}
+.home-footer .xe-logo { --xe-logo-width: 180px; }
+.pos-auth-logo .xe-logo { --xe-logo-width: 210px; }
+.pos-header-logo { display: inline-flex; align-items: center; min-height: 44px; border-radius: 4px; }
+.pos-header-logo .xe-logo { --xe-logo-width: 120px; }
+.pos-header-logo:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+
 .home-page {
     margin: 0;
     color: #111827;

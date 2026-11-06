@@ -8,8 +8,7 @@
         <main class="pos-auth-shell">
             <section class="pos-auth-brand" aria-label="POS System XE">
                 <a href="{{ route('home') }}" class="pos-auth-logo" wire:navigate>
-                    <span class="pos-auth-mark" aria-hidden="true"><flux:icon.shopping-bag class="size-6" /></span>
-                    <span>POS System XE</span>
+                    <x-system-logo />
                 </a>
                 <div class="pos-auth-intro">
                     <p>Restaurant workspace</p>

@@ -9,7 +9,7 @@
             <button type="button" class="mr-3 inline-flex items-center justify-center rounded p-1 hover:bg-indigo-500 md:hidden" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle navigation">
                 <flux:icon.bars-3 class="w-5 h-5" />
             </button>
-            <span class="font-semibold text-sm">POS System XE</span>
+            <a href="{{ route('home') }}" class="pos-header-logo" aria-label="POS System XE home" wire:navigate><x-system-logo /></a>
         </header>
 
         <div class="flex min-h-screen print:block">

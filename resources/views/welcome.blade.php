@@ -8,8 +8,7 @@
         <header class="home-header">
             <nav class="home-container home-navigation" aria-label="Main navigation">
                 <a href="{{ route('home') }}" class="home-brand">
-                    <span class="home-brand-icon"><flux:icon.shopping-cart class="size-5" /></span>
-                    <span>POS System XE</span>
+                    <x-system-logo />
                 </a>
                 <a href="{{ auth()->check() ? route('dashboard') : route('login') }}" class="home-dashboard">Dashboard</a>
             </nav>
@@ -76,7 +75,7 @@
         </main>
 
         <footer class="home-footer">
-            <a href="{{ route('home') }}" class="home-brand"><span class="home-brand-icon"><flux:icon.shopping-cart class="size-5" /></span><span>POS System XE</span></a>
+            <a href="{{ route('home') }}" class="home-brand"><x-system-logo /></a>
             <p>Powered by Laravel &amp; Livewire</p>
         </footer>
         @fluxScripts
