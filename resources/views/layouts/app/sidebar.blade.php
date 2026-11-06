@@ -3,83 +3,75 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-gray-100 text-sm text-gray-900" x-data="{ sidebarOpen: false }">
+    <body class="min-h-screen bg-gray-100 text-sm text-gray-900" x-data="{ sidebarOpen: false }" @keydown.escape.window="sidebarOpen = false">
         {{-- Top header bar --}}
         <header class="fixed top-0 left-0 right-0 h-12 bg-indigo-600 flex items-center px-4 text-white print:hidden z-50">
-            <button type="button" class="mr-3 inline-flex items-center justify-center rounded p-1 hover:bg-indigo-500 md:hidden" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle navigation">
+            <button type="button" class="pos-menu-toggle mr-3 md:hidden" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle navigation" aria-controls="pos-sidebar" :aria-expanded="sidebarOpen">
                 <flux:icon.bars-3 class="w-5 h-5" />
             </button>
             <a href="{{ route('home') }}" class="pos-header-logo" aria-label="POS System XE home" wire:navigate><x-system-logo /></a>
         </header>
 
         <div class="flex min-h-screen print:block">
-            <div x-cloak x-show="sidebarOpen" class="fixed inset-0 top-12 bg-black/40 print:hidden z-30 md:hidden" @click="sidebarOpen = false"></div>
+            <div x-cloak x-show="sidebarOpen" x-transition.opacity.duration.200ms class="pos-sidebar-backdrop fixed inset-0 top-12 print:hidden z-30 md:hidden" @click="sidebarOpen = false" aria-hidden="true"></div>
 
             {{-- Left sidebar --}}
             <aside
-                class="fixed top-12 left-0 bottom-0 w-60 bg-indigo-700 text-white flex flex-col print:hidden z-40 overflow-y-auto transform transition-transform duration-200 ease-out -translate-x-full md:translate-x-0"
-                :class="{ 'translate-x-0': sidebarOpen }"
+                id="pos-sidebar"
+                class="pos-sidebar fixed top-12 left-0 bottom-0 w-60 flex flex-col print:hidden z-40"
+                :class="{ 'is-open': sidebarOpen }"
+                aria-label="Restaurant workspace"
             >
-                <div class="flex items-center justify-between gap-2 px-4 py-1 font-semibold text-sm border-b border-indigo-500">
-                    <span>Kedai Soto Banso</span>
-                    <a href="{{ route('home') }}" class="inline-flex size-11 shrink-0 items-center justify-center rounded-md hover:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label="{{ __('Website home') }}" title="{{ __('Website home') }}" wire:navigate>
+                <div class="pos-sidebar-heading">
+                    <span class="pos-sidebar-name">Kedai Soto Banso</span>
+                    <a href="{{ route('home') }}" class="pos-sidebar-home" aria-label="{{ __('Website home') }}" title="{{ __('Website home') }}" wire:navigate>
                         <flux:icon.home class="size-4" aria-hidden="true" />
                     </a>
                 </div>
 
-                <nav class="flex-1 py-2 text-sm overflow-y-auto">
-                    @php
-                        $navItem = function ($label, $href, $active = false, $icon = null) {
-                            $classes = 'flex items-center gap-2 px-4 py-2 hover:bg-indigo-600';
-                            if ($active) {
-                                $classes .= ' bg-indigo-500';
-                            }
-                            return [$classes, $href];
-                        };
-                    @endphp
-
+                <nav class="pos-sidebar-nav" aria-label="Main navigation">
                     @foreach ([
                         ['Dashboard', route('dashboard'), request()->routeIs('dashboard')],
                         ['Orders', route('orders'), request()->routeIs('orders')],
                         ['POS', route('pos'), request()->routeIs('pos')],
                     ] as [$label, $href, $active])
-                        <a href="{{ $href }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ $active ? 'bg-indigo-500' : '' }}" @if($href !== '#' && $label !== 'Orders') wire:navigate @endif>
+                        <a href="{{ $href }}" class="pos-sidebar-link {{ $active ? 'is-active' : '' }}" @if($active) aria-current="page" @endif @if($href !== '#' && $label !== 'Orders') wire:navigate @endif>
                             @if ($label === 'Orders')
-                                <flux:icon.document-text class="w-4 h-4 text-white opacity-80" />
+                                <flux:icon.document-text class="pos-sidebar-icon" aria-hidden="true" />
                             @elseif ($label === 'POS')
-                                <flux:icon.shopping-bag class="w-4 h-4 text-white opacity-80" />
+                                <flux:icon.shopping-bag class="pos-sidebar-icon" aria-hidden="true" />
                             @else
-                                <flux:icon.home class="w-4 h-4 text-white opacity-80" />
+                                <flux:icon.squares-2x2 class="pos-sidebar-icon" aria-hidden="true" />
                             @endif
                             {{ __($label) }}
                         </a>
                     @endforeach
 
                     {{-- Setup (expandable) --}}
-                    <details class="group" open>
-                        <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
-                            <flux:icon.cog-6-tooth class="w-4 h-4 text-white opacity-80" />
+                    <details class="pos-sidebar-group" open>
+                        <summary class="pos-sidebar-link">
+                            <flux:icon.cog-6-tooth class="pos-sidebar-icon" aria-hidden="true" />
                             {{ __('Setup') }}
-                            <span class="ml-auto text-xs opacity-70 group-open:rotate-90 transition-transform">&#9654;</span>
+                            <flux:icon.chevron-right class="pos-sidebar-chevron" aria-hidden="true" />
                         </summary>
-                        <div class="pl-8">
-                            <a href="{{ route('categories') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('categories') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                        <div class="pos-sidebar-submenu">
+                            <a href="{{ route('categories') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('categories') ? 'is-active' : '' }}" @if(request()->routeIs('categories')) aria-current="page" @endif wire:navigate>
                                 {{ __('Category') }}
                             </a>
-                            <a href="{{ route('items') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('items') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                            <a href="{{ route('items') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('items') ? 'is-active' : '' }}" @if(request()->routeIs('items')) aria-current="page" @endif wire:navigate>
                                 {{ __('Item') }}
                             </a>
-                            <a href="{{ route('tables') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('tables') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                            <a href="{{ route('tables') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('tables') ? 'is-active' : '' }}" @if(request()->routeIs('tables')) aria-current="page" @endif wire:navigate>
                                 {{ __('Table') }}
                             </a>
-                            <a href="{{ route('table-qr') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('table-qr') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                            <a href="{{ route('table-qr') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('table-qr') ? 'is-active' : '' }}" @if(request()->routeIs('table-qr')) aria-current="page" @endif wire:navigate>
                                 {{ __('Table QR') }}
                             </a>
-                            <a href="{{ route('payment-methods') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('payment-methods') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                            <a href="{{ route('payment-methods') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('payment-methods') ? 'is-active' : '' }}" @if(request()->routeIs('payment-methods')) aria-current="page" @endif wire:navigate>
                                 {{ __('Payment Method') }}
                             </a>
                             @can('manage-users')
-                                <a href="{{ route('admin.users') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('admin.users') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                                <a href="{{ route('admin.users') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('admin.users') ? 'is-active' : '' }}" @if(request()->routeIs('admin.users')) aria-current="page" @endif wire:navigate>
                                     {{ __('Manage Users') }}
                                 </a>
                             @endcan
@@ -87,20 +79,20 @@
                     </details>
                 </nav>
 
-                <div class="border-t border-indigo-500 shrink-0">
-                    <details class="group" open>
-                        <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
-                            <flux:icon.user class="w-4 h-4 text-white opacity-80" />
-                            {{ auth()->user()->name }}
-                            <span class="ml-auto text-xs opacity-70 group-open:rotate-90 transition-transform">&#9654;</span>
+                <div class="pos-sidebar-footer">
+                    <details class="pos-sidebar-group" open>
+                        <summary class="pos-sidebar-link pos-sidebar-account">
+                            <span class="pos-sidebar-avatar"><flux:icon.user class="pos-sidebar-icon" aria-hidden="true" /></span>
+                            <span class="pos-sidebar-username">{{ auth()->user()->name }}</span>
+                            <flux:icon.chevron-right class="pos-sidebar-chevron" aria-hidden="true" />
                         </summary>
-                        <div class="pl-8">
-                            <a href="{{ route('profile') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('profile') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                        <div class="pos-sidebar-submenu">
+                            <a href="{{ route('profile') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('profile') ? 'is-active' : '' }}" @if(request()->routeIs('profile')) aria-current="page" @endif wire:navigate>
                                 {{ __('Profile') }}
                             </a>
                             <form method="POST" action="{{ route('logout') }}" class="w-full">
                                 @csrf
-                                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100">
+                                <button type="submit" class="pos-sidebar-link pos-sidebar-sublink pos-sidebar-logout">
                                     {{ __('Log Out') }}
                                 </button>
                             </form>
