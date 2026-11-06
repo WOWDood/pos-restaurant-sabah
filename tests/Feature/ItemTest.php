@@ -37,7 +37,8 @@ it('can create an item', function () {
         ->set('category_id', $this->category->id)
         ->set('description', 'Burger')
         ->set('unit_price', 12.50)
-        ->call('save');
+        ->call('save')
+        ->assertSee('Item saved.');
 
     expect(Item::where('code', 'B1')->exists())->toBeTrue();
 });
@@ -51,7 +52,8 @@ it('validates unique code and price', function () {
         ->set('description', 'Dup')
         ->set('unit_price', -1)
         ->call('save')
-        ->assertHasErrors(['code', 'unit_price']);
+        ->assertHasErrors(['code', 'unit_price'])
+        ->assertDontSee('Item saved.');
 });
 
 it('can filter by category', function () {

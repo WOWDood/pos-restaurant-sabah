@@ -101,6 +101,7 @@ new #[Title('Item')] class extends Component {
         }
 
         $this->showModal = false;
+        session()->flash('action_success', 'Item saved.');
         $this->reset(['code', 'category_id', 'description', 'notes', 'unit_price', 'active', 'is_combo', 'editingId']);
         $this->active = true;
     }
@@ -120,6 +121,7 @@ new #[Title('Item')] class extends Component {
                 return;
             }
             $item->delete();
+            session()->flash('action_success', 'Item deleted.');
         }
         $this->deleteId = null;
     }
@@ -309,12 +311,13 @@ new #[Title('Item')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-4">
+<div class="space-y-4 operations-page">
+    <x-action-feedback />
     <h1 class="text-xl font-bold text-gray-900">Item Search</h1>
 
     <x-card>
         <div class="flex items-center gap-3 mb-4">
-            <input type="text" wire:model.live="search" placeholder="Search…" class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm" />
+            <input type="search" wire:model.live.debounce.300ms="search" aria-label="Search items" placeholder="Search…" class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm" />
             <button wire:click="openCreate" class="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded">+ Add</button>
         </div>
 
@@ -325,7 +328,7 @@ new #[Title('Item')] class extends Component {
             @endforeach
         </div>
 
-        <x-table>
+        <x-table class="record-table">
             <thead class="bg-gray-50">
                 <tr>
                     <th class="text-left px-3 py-2 font-medium text-gray-600">Code</th>
@@ -338,26 +341,28 @@ new #[Title('Item')] class extends Component {
                 </tr>
             </thead>
             <tbody>
-                @foreach ($this->items as $item)
+                @forelse ($this->items as $item)
                     <tr class="border-t border-gray-100">
-                        <td class="px-3 py-2">{{ $item->code }}</td>
-                        <td class="px-3 py-2">{{ $item->description }}</td>
-                        <td class="px-3 py-2">{{ $item->category->code ?? '' }}</td>
-                        <td class="px-3 py-2">{{ number_format((float)$item->unit_price, 2) }}</td>
-                        <td class="px-3 py-2">
+                        <td data-label="Code" class="px-3 py-2">{{ $item->code }}</td>
+                        <td data-label="Description" class="px-3 py-2">{{ $item->description }}</td>
+                        <td data-label="Category" class="px-3 py-2">{{ $item->category->code ?? '' }}</td>
+                        <td data-label="Unit price" class="px-3 py-2">RM{{ number_format((float)$item->unit_price, 2) }}</td>
+                        <td data-label="Active" class="px-3 py-2">
                             <span class="px-2 py-0.5 rounded text-sm {{ $item->active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ $item->active ? 'Yes' : 'No' }}</span>
                         </td>
-                        <td class="px-3 py-2">
+                        <td data-label="Type" class="px-3 py-2">
                             <span class="px-2 py-0.5 rounded text-sm bg-gray-100 text-gray-600">{{ $item->type ?? 'General' }}</span>
                         </td>
-                        <td class="px-3 py-2">
+                        <td data-label="Actions" class="px-3 py-2">
                             <button wire:click="openPhotos({{ $item->id }})" class="text-purple-600 hover:underline mr-2">Photos</button>
                             <button wire:click="openModifiers({{ $item->id }})" class="text-green-600 hover:underline mr-2">Modifiers</button>
                             <button wire:click="openEdit({{ $item->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
                             <button wire:click="confirmDelete({{ $item->id }})" class="text-red-600 hover:underline">Delete</button>
                         </td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr><td colspan="7" class="px-3 py-6 text-center text-gray-600">No items found. Try another search or category.</td></tr>
+                @endforelse
             </tbody>
         </x-table>
 
@@ -421,7 +426,7 @@ new #[Title('Item')] class extends Component {
         </div>
         <div class="mt-5 flex justify-end gap-2">
             <button wire:click="$set('showModal', false)" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-            <button wire:click="save" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">{{ $editingId ? 'Update' : 'Add' }}</button>
+            <button wire:click="save" class="pending-action px-4 py-2 text-sm bg-indigo-600 text-white rounded" wire:loading.attr="disabled" wire:target="save"><span wire:loading.remove wire:target="save">{{ $editingId ? 'Update' : 'Add' }}</span><span wire:loading wire:target="save" role="status">Saving…</span></button>
         </div>
     </x-modal>
 
@@ -431,7 +436,7 @@ new #[Title('Item')] class extends Component {
         @error('delete') <p class="text-sm text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-            <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>
+            <button wire:click="delete" class="pending-action px-4 py-2 text-sm bg-red-600 text-white rounded" wire:loading.attr="disabled" wire:target="delete"><span wire:loading.remove wire:target="delete">Delete</span><span wire:loading wire:target="delete" role="status">Deleting…</span></button>
         </div>
     </x-modal>
 
@@ -461,8 +466,9 @@ new #[Title('Item')] class extends Component {
                         </ul>
                     @endif
 
-                    <button type="submit" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded disabled:opacity-50" @disabled(!count($photoFiles))>
-                        Upload {{ count($photoFiles) }} photo{{ count($photoFiles) === 1 ? '' : 's' }}
+                    <button type="submit" wire:loading.attr="disabled" wire:target="uploadPhotos,photoFiles" class="pending-action px-4 py-2 text-sm bg-indigo-600 text-white rounded disabled:opacity-50" @disabled(!count($photoFiles))>
+                        <span wire:loading.remove wire:target="uploadPhotos">Upload {{ count($photoFiles) }} photo{{ count($photoFiles) === 1 ? '' : 's' }}</span>
+                        <span wire:loading wire:target="uploadPhotos" role="status">Uploading photos…</span>
                     </button>
                 </form>
                 <div class="grid grid-cols-2 gap-3">
@@ -487,7 +493,7 @@ new #[Title('Item')] class extends Component {
 
     <x-modal :show="$showModifiersModal" title="Modifier Groups" close="$set('showModifiersModal', false)" wide>
         @if ($this->modifierItem)
-            <div class="space-y-4">
+            <div class="space-y-4 operations-page">
                 @if (! $showGroupForm)
                     <button wire:click="$set('showGroupForm', true)" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded">+ Add Group</button>
                 @else
@@ -515,7 +521,7 @@ new #[Title('Item')] class extends Component {
                             <p class="text-sm text-gray-400">Set both to 1 for a required single choice.</p>
                         </div>
                         <div class="mt-3 flex gap-2">
-                            <button wire:click="saveGroup" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded">{{ $editingGroupId ? 'Update Group' : 'Add Group' }}</button>
+                            <button wire:click="saveGroup" class="pending-action px-3 py-1 text-sm bg-indigo-600 text-white rounded" wire:loading.attr="disabled" wire:target="saveGroup"><span wire:loading.remove wire:target="saveGroup">{{ $editingGroupId ? 'Update Group' : 'Add Group' }}</span><span wire:loading wire:target="saveGroup" role="status">Saving…</span></button>
                             <button wire:click="cancelEditGroup" class="px-3 py-1 text-sm border border-gray-300 rounded">Cancel</button>
                         </div>
                         @error('newGroupName') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
@@ -543,7 +549,7 @@ new #[Title('Item')] class extends Component {
                                     </div>
                                 </div>
                                 <div class="flex gap-2 mt-2">
-                                    <button wire:click="saveGroup" class="px-3 py-1 text-sm bg-indigo-600 text-white rounded">Update Group</button>
+                                    <button wire:click="saveGroup" class="pending-action px-3 py-1 text-sm bg-indigo-600 text-white rounded" wire:loading.attr="disabled" wire:target="saveGroup"><span wire:loading.remove wire:target="saveGroup">Update Group</span><span wire:loading wire:target="saveGroup" role="status">Saving…</span></button>
                                     <button wire:click="cancelEditGroup" class="px-3 py-1 text-sm border border-gray-300 rounded">Cancel</button>
                                 </div>
                             </div>
@@ -588,7 +594,7 @@ new #[Title('Item')] class extends Component {
                                             <input type="checkbox" wire:model="newOptionBase" /> Base option
                                         </label>
                                         <div class="flex gap-2">
-                                            <button wire:click="saveOption" class="px-3 py-1 text-sm bg-green-600 text-white rounded">Update Option</button>
+                                            <button wire:click="saveOption" class="pending-action px-3 py-1 text-sm bg-green-600 text-white rounded" wire:loading.attr="disabled" wire:target="saveOption"><span wire:loading.remove wire:target="saveOption">Update Option</span><span wire:loading wire:target="saveOption" role="status">Saving…</span></button>
                                             <button wire:click="cancelEditOption" class="px-3 py-1 text-sm border border-gray-300 rounded">Cancel</button>
                                         </div>
                                     </div>

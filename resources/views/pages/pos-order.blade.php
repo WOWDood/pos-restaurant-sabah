@@ -247,6 +247,7 @@ new #[Title('POS / Cashier')] class extends Component
 
         if ($removed) {
             $this->removingLineId = null;
+            session()->flash('action_success', 'Item removed from the order.');
         }
     }
 
@@ -328,6 +329,7 @@ new #[Title('POS / Cashier')] class extends Component
             return;
         }
         $this->resetAddItemForm();
+        session()->flash('action_success', $wasEditing ? 'Order item updated.' : 'Item added to the order.');
 
         if ($wasEditing) {
             $this->showAddItemModal = false;
@@ -590,13 +592,14 @@ new #[Title('POS / Cashier')] class extends Component
 }; ?>
 
 <div class="space-y-4">
+    <x-action-feedback />
     <h1 class="text-xl font-bold text-gray-900">POS / Cashier</h1>
 
     @error('order')
         <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">{{ $message }}</div>
     @enderror
     @if ($paymentSuccess)
-        <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-2">{{ $paymentSuccess }}</div>
+        <div role="status" class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-2">{{ $paymentSuccess }}</div>
     @endif
 
     <x-card>
@@ -838,10 +841,12 @@ new #[Title('POS / Cashier')] class extends Component
                         <button
                             wire:click="addToOrder"
                             @disabled(! $this->requiredGroupsSatisfied)
-                            class="bg-indigo-600 text-white text-sm font-medium px-6 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                            wire:loading.attr="disabled" wire:target="addToOrder"
+                            class="pending-action bg-indigo-600 text-white text-sm font-medium px-6 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         >
+                            <span wire:loading.remove wire:target="addToOrder">
                             {{ $editingLineId ? 'Update Item' : 'Add to Order' }}
-                        </button>
+                        </span><span wire:loading wire:target="addToOrder" role="status">Saving item…</span></button>
                     </div>
                 </div>
             @else
@@ -859,7 +864,7 @@ new #[Title('POS / Cashier')] class extends Component
         @error('order') <p class="text-sm text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelRemove" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-            <button wire:click="removeLine" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Remove</button>
+            <button wire:click="removeLine" class="pending-action px-4 py-2 text-sm bg-red-600 text-white rounded" wire:loading.attr="disabled" wire:target="removeLine"><span wire:loading.remove wire:target="removeLine">Remove</span><span wire:loading wire:target="removeLine" role="status">Removing…</span></button>
         </div>
     </x-modal>
 
@@ -899,7 +904,7 @@ new #[Title('POS / Cashier')] class extends Component
 
             <div class="flex justify-end gap-2 border-t border-gray-200 pt-4">
                 <button wire:click="closePaymentModal" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-                <button wire:click="confirmPayment" class="px-4 py-2 text-sm bg-green-600 text-white rounded">Continue</button>
+                <button wire:click="confirmPayment" class="pending-action px-4 py-2 text-sm bg-green-600 text-white rounded" wire:loading.attr="disabled" wire:target="confirmPayment"><span wire:loading.remove wire:target="confirmPayment">Continue</span><span wire:loading wire:target="confirmPayment" role="status">Checking payment…</span></button>
             </div>
         </div>
     </x-modal>
@@ -918,7 +923,7 @@ new #[Title('POS / Cashier')] class extends Component
             </div>
             <div class="flex justify-end gap-2 border-t border-gray-200 pt-4">
                 <button wire:click="cancelConfirmPayment" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-                <button wire:click="payNow" class="px-4 py-2 text-sm bg-green-600 text-white rounded">Yes, Pay Now</button>
+                <button wire:click="payNow" class="pending-action px-4 py-2 text-sm bg-green-600 text-white rounded" wire:loading.attr="disabled" wire:target="payNow"><span wire:loading.remove wire:target="payNow">Yes, Pay Now</span><span wire:loading wire:target="payNow" role="status">Processing payment…</span></button>
             </div>
         </div>
     </x-modal>

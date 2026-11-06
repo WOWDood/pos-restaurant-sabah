@@ -2,6 +2,9 @@
 
 use App\Models\BusinessSetting;
 use App\Models\Order;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -15,6 +18,10 @@ new #[Title('Orders')] class extends Component
     public string $status = 'all';
 
     public string $search = '';
+
+    public string $dateFrom = '';
+
+    public string $dateTo = '';
 
     public ?Order $selectedOrder = null;
 
@@ -31,6 +38,73 @@ new #[Title('Orders')] class extends Component
     public function updatingSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function updatedDateFrom(): void
+    {
+        $this->applyFilters();
+    }
+
+    public function updatedDateTo(): void
+    {
+        $this->applyFilters();
+    }
+
+    public function applyFilters(): void
+    {
+        $this->resetPage();
+        $this->resetValidation(['dateFrom', 'dateTo']);
+        $this->validate($this->dateRules(), [
+            'dateFrom.date_format' => 'Enter a valid start date.',
+            'dateTo.date_format' => 'Enter a valid end date.',
+            'dateTo.after_or_equal' => 'End date must be on or after the start date.',
+        ]);
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset(['table', 'search', 'status', 'dateFrom', 'dateTo']);
+        $this->resetValidation();
+        $this->resetPage();
+    }
+
+    /** @return array<string, array<int, string>> */
+    private function dateRules(): array
+    {
+        return [
+            'dateFrom' => ['nullable', 'date_format:Y-m-d'],
+            'dateTo' => $this->dateFrom !== ''
+                ? ['nullable', 'date_format:Y-m-d', 'after_or_equal:dateFrom']
+                : ['nullable', 'date_format:Y-m-d'],
+        ];
+    }
+
+    /** @return Builder<Order> */
+    private function filteredOrders(): Builder
+    {
+        $query = Order::query()->when($this->status !== 'all', fn (Builder $query): Builder => $query->where('status', $this->status));
+        if (Validator::make(['dateFrom' => $this->dateFrom, 'dateTo' => $this->dateTo], $this->dateRules())->fails()) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $search = trim($this->search);
+        if ($search !== '') {
+            $orderId = filter_var(ltrim($search, '#'), FILTER_VALIDATE_INT);
+            $query->where(function (Builder $query) use ($search, $orderId): void {
+                $query->whereHas('table', fn (Builder $table): Builder => $table->where('name', 'like', '%'.$search.'%'));
+                if ($orderId !== false && $orderId > 0) {
+                    $query->orWhere('id', $orderId);
+                }
+            });
+        }
+        if ($this->dateFrom !== '') {
+            $query->where('created_at', '>=', CarbonImmutable::parse($this->dateFrom, 'Asia/Kuala_Lumpur')->setTimezone(config('app.timezone')));
+        }
+        if ($this->dateTo !== '') {
+            $query->where('created_at', '<', CarbonImmutable::parse($this->dateTo, 'Asia/Kuala_Lumpur')->addDay()->setTimezone(config('app.timezone')));
+        }
+
+        return $query;
     }
 
     public function setStatus(string $status): void
@@ -96,25 +170,21 @@ new #[Title('Orders')] class extends Component
 
     public function getOrdersProperty()
     {
-        return Order::query()
+        return $this->filteredOrders()
             ->with(['table', 'payments.method'])
-            ->when($this->status !== 'all', fn ($query) => $query->where('status', $this->status))
-            ->when($this->search, fn ($query) => $query->whereHas('table', fn ($table) => $table->where('name', 'like', "%{$this->search}%")))
             ->orderByDesc('id')
             ->paginate(10);
     }
 
     public function getUnpaidCountProperty(): int
     {
-        return Order::query()
-            ->when($this->status !== 'all', fn ($query) => $query->where('status', $this->status))
-            ->when($this->search, fn ($query) => $query->whereHas('table', fn ($table) => $table->where('name', 'like', "%{$this->search}%")))
+        return $this->filteredOrders()
             ->whereIn('status', Order::OPEN_STATUSES)
             ->count();
     }
 }; ?>
 
-<div class="space-y-4">
+<div class="space-y-4 operations-page">
     <h1 class="text-xl font-bold text-gray-900">Orders</h1>
 
     <x-card>
@@ -148,15 +218,24 @@ new #[Title('Orders')] class extends Component
             </div>
         @endif
 
-        <div class="flex items-center gap-2 mb-4">
-            <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search by table..." class="flex-1 rounded border border-gray-300 px-3 py-2 text-sm" />
-            <button class="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded flex items-center gap-1">
-                <flux:icon.magnifying-glass class="w-4 h-4" />
-                Search
-            </button>
-        </div>
+        <form wire:submit="applyFilters" class="order-filters mb-4">
+            <label class="order-search">Search orders
+                <input type="search" wire:model.live.debounce.300ms="search" placeholder="Table or order #" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            </label>
+            <label>From date
+                <input type="date" wire:model.live="dateFrom" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            </label>
+            <label>To date
+                <input type="date" wire:model.live="dateTo" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            </label>
+            <button type="submit" wire:loading.attr="disabled" wire:target="applyFilters" class="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded">Search</button>
+            <button type="button" wire:click="clearFilters" class="text-sm text-indigo-700 px-3 py-2 rounded border border-gray-300">Clear filters</button>
+        </form>
+        <div role="alert">@error('dateFrom') <p class="text-sm text-red-700 mb-2">{{ $message }}</p> @enderror @error('dateTo') <p class="text-sm text-red-700 mb-2">{{ $message }}</p> @enderror</div>
+        <p class="text-sm text-gray-600 mb-3">Dates filter when orders were created, in Malaysia time.</p>
+        <p wire:loading.delay wire:target="search,dateFrom,dateTo,status,applyFilters,clearFilters" role="status" class="text-sm text-indigo-700 mb-3">Updating orders…</p>
 
-        <x-table>
+        <x-table class="record-table">
             <thead class="bg-gray-50">
                 <tr>
                     <th class="text-left px-3 py-2 font-medium text-gray-600">Order #</th>
@@ -171,17 +250,17 @@ new #[Title('Orders')] class extends Component
             <tbody>
                 @forelse ($this->orders as $order)
                     <tr class="border-t border-gray-100">
-                        <td class="px-3 py-2">#{{ $order->id }}</td>
-                        <td class="px-3 py-2">{{ $order->table->name ?? '-' }}</td>
-                        <td class="px-3 py-2">
+                        <td data-label="Order #" class="px-3 py-2">#{{ $order->id }}</td>
+                        <td data-label="Table" class="px-3 py-2">{{ $order->table->name ?? '-' }}</td>
+                        <td data-label="Status" class="px-3 py-2">
                             <span class="inline-block px-2 py-0.5 rounded text-sm font-medium {{ Order::statusBadgeClasses($order->status) }}">
                                 {{ Order::statusLabel($order->status) }}
                             </span>
                         </td>
-                        <td class="px-3 py-2">{{ number_format((float) $order->total, 2) }}</td>
-                        <td class="px-3 py-2">{{ $order->payments->sortByDesc('id')->first()?->method?->description ?? '-' }}</td>
-                        <td class="px-3 py-2">{{ $order->created_at->format('d M Y H:i') }}</td>
-                        <td class="px-3 py-2 text-right">
+                        <td data-label="Total" class="px-3 py-2">RM{{ number_format((float) $order->total, 2) }}</td>
+                        <td data-label="Payment" class="px-3 py-2">{{ $order->payments->sortByDesc('id')->first()?->method?->description ?? '-' }}</td>
+                        <td data-label="Created" class="px-3 py-2">{{ $order->created_at->setTimezone('Asia/Kuala_Lumpur')->format('d M Y H:i') }}</td>
+                        <td data-label="Actions" class="px-3 py-2 text-right">
                             <a href="{{ route('pos.order', $order) }}" class="inline-flex items-center gap-1 bg-indigo-600 text-white text-sm font-medium px-3 py-1.5 rounded" wire:navigate>
                                 <flux:icon.list-bullet class="w-3.5 h-3.5" />
                                 Open

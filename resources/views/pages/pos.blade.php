@@ -75,6 +75,7 @@ new #[Title('POS / Cashier')] class extends Component {
 }; ?>
 
 <div class="space-y-4">
+    <x-action-feedback />
     <h1 class="text-xl font-bold text-gray-900">POS / Cashier</h1>
 
     <x-card>
@@ -131,7 +132,7 @@ new #[Title('POS / Cashier')] class extends Component {
         </div>
         <div class="flex justify-end gap-2">
             <button wire:click="cancelTable" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-            <button wire:click="createOrder" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">Create New Order</button>
+            <button wire:click="createOrder" class="pending-action px-4 py-2 text-sm bg-indigo-600 text-white rounded" wire:loading.attr="disabled" wire:target="createOrder"><span wire:loading.remove wire:target="createOrder">Create New Order</span><span wire:loading wire:target="createOrder" role="status">Creating order…</span></button>
         </div>
     </x-modal>
 </div>

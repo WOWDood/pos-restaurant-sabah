@@ -43,6 +43,7 @@ new #[Title('Table')] class extends Component {
         }
 
         $this->showModal = false;
+        session()->flash('action_success', 'Table saved.');
         $this->reset(['name', 'editingId']);
     }
 
@@ -57,6 +58,7 @@ new #[Title('Table')] class extends Component {
                 return;
             }
             $t->delete();
+            session()->flash('action_success', 'Table deleted.');
         }
         $this->deleteId = null;
     }
@@ -72,6 +74,7 @@ new #[Title('Table')] class extends Component {
 }; ?>
 
 <div class="space-y-4">
+    <x-action-feedback />
     <h1 class="text-xl font-bold text-gray-900">Table Search</h1>
 
     <x-card>
@@ -127,7 +130,7 @@ new #[Title('Table')] class extends Component {
         </div>
         <div class="mt-5 flex justify-end gap-2">
             <button wire:click="$set('showModal', false)" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-            <button wire:click="save" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">{{ $editingId ? 'Update' : 'Add' }}</button>
+            <button wire:click="save" class="pending-action px-4 py-2 text-sm bg-indigo-600 text-white rounded" wire:loading.attr="disabled" wire:target="save"><span wire:loading.remove wire:target="save">{{ $editingId ? 'Update' : 'Add' }}</span><span wire:loading wire:target="save" role="status">Saving…</span></button>
         </div>
     </x-modal>
 
@@ -136,7 +139,7 @@ new #[Title('Table')] class extends Component {
         @error('delete') <p class="text-sm text-red-600 mb-2">{{ $message }}</p> @enderror
         <div class="flex justify-end gap-2">
             <button wire:click="cancelDelete" class="px-4 py-2 text-sm border border-gray-300 rounded">Cancel</button>
-            <button wire:click="delete" class="px-4 py-2 text-sm bg-red-600 text-white rounded">Delete</button>
+            <button wire:click="delete" class="pending-action px-4 py-2 text-sm bg-red-600 text-white rounded" wire:loading.attr="disabled" wire:target="delete"><span wire:loading.remove wire:target="delete">Delete</span><span wire:loading wire:target="delete" role="status">Deleting…</span></button>
         </div>
     </x-modal>
 </div>
