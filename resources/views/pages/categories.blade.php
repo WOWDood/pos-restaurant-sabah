@@ -5,7 +5,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Category Search')] class extends Component {
+new #[Title('Category')] class extends Component {
     use WithPagination;
 
     public string $search = '';

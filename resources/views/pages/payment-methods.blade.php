@@ -5,7 +5,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Payment Method Search')] class extends Component {
+new #[Title('Payment Methods')] class extends Component {
     use WithPagination;
 
     public string $search = '';

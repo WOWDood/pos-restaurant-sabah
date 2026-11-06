@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ $table ? 'Menu' : 'Table not found' }} | {{ $businessName }}</title>
+    <title>{{ $table ? 'Menu' : 'Table not found' }} — POS System XE</title>
+    @include('partials.favicons')
     @fonts
     @vite(['resources/css/app.css', 'resources/css/customer-menu.css', 'resources/js/app.js'])
     @livewireStyles

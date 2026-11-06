@@ -1,4 +1,4 @@
-<x-layouts::auth.pos :title="__('Log in · POS System XE')">
+<x-layouts::auth.pos :title="__('Log in')">
     <div class="flex flex-col gap-6">
         <div class="pos-auth-heading">
             <h1>{{ __('Welcome back') }}</h1>

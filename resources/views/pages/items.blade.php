@@ -10,7 +10,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Item Search')] class extends Component {
+new #[Title('Item')] class extends Component {
     use WithPagination;
     use WithFileUploads;
 

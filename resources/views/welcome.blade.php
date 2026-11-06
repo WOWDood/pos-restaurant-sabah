@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        @include('partials.head', ['title' => 'Kedai Soto Banso'])
+        @include('partials.head', ['title' => null])
     </head>
     <body class="home-page">
         <a href="#main-content" class="home-skip">Skip to content</a>
