@@ -10,7 +10,7 @@
                 <a href="{{ route('home') }}" class="home-brand">
                     <x-system-logo />
                 </a>
-                <a href="{{ auth()->check() ? route('dashboard') : route('login') }}" class="home-dashboard">Dashboard</a>
+                <a href="{{ auth()->check() ? route('dashboard') : route('login') }}" class="home-dashboard">{{ auth()->check() ? 'Dashboard' : 'Staff Login' }}</a>
             </nav>
         </header>
 
@@ -20,7 +20,15 @@
                     <span class="home-badge"><span aria-hidden="true"></span>Restaurant POS System</span>
                     <h1 id="home-title">Manage Your Restaurant<br><span>With Ease</span></h1>
                     <p>A complete point-of-sale solution with QR code table ordering, real-time order management, and seamless payment processing.</p>
-                    <a href="#features" class="home-learn">Learn More <flux:icon.chevron-down class="size-4" /></a>
+                    <div class="home-hero-actions">
+                        @guest
+                            <a href="{{ route('login') }}" class="home-staff-login">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M10 17l5-5-5-5m5 5H3m9-8h6a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-6" /></svg>
+                                Staff Login
+                            </a>
+                        @endguest
+                        <a href="#features" class="home-learn">Learn More <flux:icon.chevron-down class="size-4" /></a>
+                    </div>
                 </div>
             </section>
 

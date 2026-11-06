@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\CustomerOrderController;
-use App\Models\BusinessSetting;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -11,11 +11,7 @@ Route::get('/menu/photo/{photo}', [CustomerOrderController::class, 'photo'])->na
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('admin/users', 'pages::manage-users')->middleware('can:manage-users')->name('admin.users');
-    Route::get('dashboard', function () {
-        $settings = BusinessSetting::pluck('value', 'key');
-
-        return view('dashboard', compact('settings'));
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::livewire('pos', 'pages::pos')->name('pos');
     Route::livewire('pos/order/{order}', 'pages::pos-order')->name('pos.order');

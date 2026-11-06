@@ -20,8 +20,11 @@
                 class="fixed top-12 left-0 bottom-0 w-60 bg-indigo-700 text-white flex flex-col print:hidden z-40 overflow-y-auto transform transition-transform duration-200 ease-out -translate-x-full md:translate-x-0"
                 :class="{ 'translate-x-0': sidebarOpen }"
             >
-                <div class="px-4 py-3 font-semibold text-sm border-b border-indigo-500">
-                    Kedai Soto Banso
+                <div class="flex items-center justify-between gap-2 px-4 py-1 font-semibold text-sm border-b border-indigo-500">
+                    <span>Kedai Soto Banso</span>
+                    <a href="{{ route('home') }}" class="inline-flex size-11 shrink-0 items-center justify-center rounded-md hover:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label="{{ __('Website home') }}" title="{{ __('Website home') }}" wire:navigate>
+                        <flux:icon.home class="size-4" aria-hidden="true" />
+                    </a>
                 </div>
 
                 <nav class="flex-1 py-2 text-sm overflow-y-auto">
@@ -36,7 +39,6 @@
                     @endphp
 
                     @foreach ([
-                        ['Welcome', route('home'), request()->routeIs('home')],
                         ['Dashboard', route('dashboard'), request()->routeIs('dashboard')],
                         ['Orders', route('orders'), request()->routeIs('orders')],
                         ['POS', route('pos'), request()->routeIs('pos')],
@@ -54,12 +56,6 @@
                     @endforeach
 
                     {{-- Setup (expandable) --}}
-                    @can('manage-users')
-                        <a href="{{ route('admin.users') }}" class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 {{ request()->routeIs('admin.users') ? 'bg-indigo-500' : '' }}" wire:navigate>
-                            <flux:icon.user class="w-4 h-4 text-white opacity-80" />
-                            {{ __('Manage Users') }}
-                        </a>
-                    @endcan
                     <details class="group" open>
                         <summary class="flex items-center gap-2 px-4 py-2 hover:bg-indigo-600 cursor-pointer list-none">
                             <flux:icon.cog-6-tooth class="w-4 h-4 text-white opacity-80" />
@@ -82,6 +78,11 @@
                             <a href="{{ route('payment-methods') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('payment-methods') ? 'bg-indigo-500' : '' }}" wire:navigate>
                                 {{ __('Payment Method') }}
                             </a>
+                            @can('manage-users')
+                                <a href="{{ route('admin.users') }}" class="flex items-center gap-2 px-4 py-1.5 hover:bg-indigo-600 text-indigo-100 {{ request()->routeIs('admin.users') ? 'bg-indigo-500' : '' }}" wire:navigate>
+                                    {{ __('Manage Users') }}
+                                </a>
+                            @endcan
                         </div>
                     </details>
                 </nav>
