@@ -5,8 +5,15 @@ use App\Models\RestaurantTable;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Illuminate\Support\Facades\Gate;
 
 new #[Title('POS / Cashier')] class extends Component {
+    public function boot(): void
+    {
+        auth()->user()?->unsetRelation('staffRole');
+        Gate::authorize('use-pos');
+    }
+
     use WithPagination;
 
     public string $search = '';

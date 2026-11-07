@@ -12,9 +12,16 @@ use App\Models\Receipt;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Illuminate\Support\Facades\Gate;
 
 new #[Title('POS / Cashier')] class extends Component
 {
+    public function boot(): void
+    {
+        auth()->user()?->unsetRelation('staffRole');
+        Gate::authorize('use-pos');
+    }
+
     public Order $order;
 
     public bool $showAddItemModal = false;
@@ -340,8 +347,7 @@ new #[Title('POS / Cashier')] class extends Component
 
     private function recalculateTotal(): void
     {
-        $total = $this->order->items()->sum('subtotal');
-        $this->order->update(['total' => $total]);
+        $this->order->recalculateTotals();
         $this->order->refresh()->load('table', 'items');
     }
 
@@ -361,7 +367,7 @@ new #[Title('POS / Cashier')] class extends Component
 
     public function getBusinessSettingsProperty()
     {
-        return BusinessSetting::query()->pluck('value', 'key');
+        return BusinessSetting::settings();
     }
 
     public function openPaymentModal(): void
@@ -461,7 +467,8 @@ new #[Title('POS / Cashier')] class extends Component
                 return null;
             }
 
-            $total = round((float) $order->items()->sum('subtotal'), 2);
+            $order->recalculateTotals();
+            $total = (float) $order->total;
 
             if ($total <= 0) {
                 $this->addError('payment', 'An order must have at least one item before payment.');
@@ -609,7 +616,7 @@ new #[Title('POS / Cashier')] class extends Component
                 <p class="text-sm font-medium text-gray-900">Order #{{ $order->id }}</p>
                 <span class="inline-block mt-1 px-2 py-0.5 rounded text-sm font-medium {{ Order::statusBadgeClasses($order->status) }}">{{ Order::statusLabel($order->status) }}</span>
             </div>
-            <p class="text-lg font-bold text-gray-900">RM{{ number_format((float) $order->total, 2) }}</p>
+            <div class="space-y-1 text-right"><x-order-charges :order="$order" /><p class="text-lg font-bold text-gray-900">RM{{ number_format((float) $order->total, 2) }}</p></div>
         </div>
 
         <table class="w-full text-sm mb-4">
@@ -875,6 +882,7 @@ new #[Title('POS / Cashier')] class extends Component
                 <span class="text-sm text-gray-600">Total Amount</span>
                 <span class="text-lg font-bold text-gray-900">RM{{ number_format((float) $order->total, 2) }}</span>
             </div>
+            <div class="space-y-1 text-sm"><x-order-charges :order="$order" /></div>
 
             <div>
                 <p class="text-sm font-medium text-gray-700 mb-2">Payment Method</p>
@@ -917,6 +925,7 @@ new #[Title('POS / Cashier')] class extends Component
             @error('payment') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
             <div class="space-y-2 text-sm">
                 <div class="flex justify-between"><span class="text-gray-500">Total</span><span class="font-semibold">RM{{ number_format((float) $order->total, 2) }}</span></div>
+                <x-order-charges :order="$order" />
                 <div class="flex justify-between"><span class="text-gray-500">Method</span><span>{{ $selectedPaymentMethod?->description ?? '-' }}</span></div>
                 <div class="flex justify-between"><span class="text-gray-500">Reference</span><span>{{ $paymentReference ?: '-' }}</span></div>
                 <div class="flex justify-between"><span class="text-gray-500">Order/Table</span><span>#{{ $order->id }} / {{ $order->table->name ?? '-' }}</span></div>
@@ -938,8 +947,9 @@ new #[Title('POS / Cashier')] class extends Component
             <div id="receipt-print" class="receipt-print space-y-3 text-sm">
             <div class="text-center">
                 <p class="text-lg font-bold">{{ $settings['business_name'] ?? 'Kedai Soto Banso' }}</p>
-                <p>{{ $settings['location'] ?? '' }}</p>
+                <p class="whitespace-pre-line">{{ $settings['location'] ?? '' }}</p>
                 <p>{{ $settings['phone'] ?? '' }}</p>
+                @if ($settings['email'])<p>{{ $settings['email'] }}</p>@endif
             </div>
             <div class="border-t border-b border-gray-300 py-2 space-y-1">
                 <div class="flex justify-between"><span>Receipt</span><span>{{ $receipt?->receipt_number ?? '-' }}</span></div>
@@ -965,13 +975,14 @@ new #[Title('POS / Cashier')] class extends Component
                 @endforeach
             </div>
             <div class="border-t border-gray-300 pt-2 space-y-1">
+                <x-order-charges :order="$order" />
                 <div class="flex justify-between font-bold"><span>Total</span><span>RM{{ number_format((float) $order->total, 2) }}</span></div>
                 <div class="flex justify-between"><span>Payment</span><span>{{ $payment?->method?->description ?? '-' }}</span></div>
                 @if ($payment?->reference)
                     <div class="flex justify-between"><span>Reference</span><span>{{ $payment->reference }}</span></div>
                 @endif
             </div>
-            <p class="text-center font-medium pt-2">Thank you for your visit!</p>
+            <p class="text-center font-medium pt-2">{{ $settings['receipt_footer'] }}</p>
             <div class="flex justify-end gap-2 pt-3 print-hidden">
                 <button wire:click="closeReceiptModal" class="px-4 py-2 text-sm border border-gray-300 rounded">Close</button>
                 <button wire:click="markReceiptPrinted" onclick="window.print()" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">Print</button>

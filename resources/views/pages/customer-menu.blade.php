@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\PriceOrderItem;
+use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Item;
 use App\Models\RestaurantTable;
@@ -17,6 +18,8 @@ new class extends Component {
     #[Locked]
     public string $businessName;
     #[Locked]
+    public array $shopSettings = [];
+    #[Locked]
     public array $cart = [];
     public string $search = '';
     public ?int $selectedItemId = null;
@@ -26,11 +29,12 @@ new class extends Component {
     public bool $showItem = false;
     public bool $showCart = false;
 
-    public function mount(RestaurantTable $table, string $businessName): void
+    public function mount(RestaurantTable $table, string $businessName, array $shopSettings = []): void
     {
         $this->tableId = (int) $table->id;
         $this->tableName = $table->name;
         $this->businessName = $businessName;
+        $this->shopSettings = $shopSettings ?: BusinessSetting::settings();
         $this->cart = session()->get($this->cartKey(), []);
     }
 
@@ -144,11 +148,20 @@ new class extends Component {
 
 <div class="customer-menu" x-data="{ active: 'all', go(id) { this.active = id; document.getElementById(id === 'all' ? 'menu-start' : id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' }) }, update() { let current = 'all'; document.querySelectorAll('[data-menu-section]').forEach(section => { if (section.getBoundingClientRect().top <= 150) current = section.id }); this.active = current } }" @scroll.window.throttle.100ms="update()">
     <header class="menu-header">
-        <div><p class="customer-eyebrow">Welcome to</p><h1>{{ $businessName }}</h1></div>
+        <div class="menu-shop-brand">
+            @if (\App\Models\BusinessSetting::logoUrl($shopSettings))
+                <img src="{{ \App\Models\BusinessSetting::logoUrl($shopSettings) }}" alt="" width="48" height="48" class="menu-shop-logo" />
+            @endif
+            <div><p class="customer-eyebrow">Welcome to</p><h1>{{ $businessName }}</h1></div>
+        </div>
         <span class="table-badge"><span>You're seated at</span>Table {{ $tableName }}</span>
     </header>
     <main class="menu-main">
-        <div class="menu-intro"><h2>What sounds good?</h2><p>Choose your favourites, made your way.</p></div>
+        <div class="menu-intro"><h2>What sounds good?</h2><p>{{ $shopSettings['menu_message'] }}</p>
+            @if ($shopSettings['location'])<p class="menu-shop-address">{{ $shopSettings['location'] }}</p>@endif
+            @if ($shopSettings['phone'])<p class="menu-shop-address">{{ $shopSettings['phone'] }}</p>@endif
+            @if ($shopSettings['tax_enabled'] === '1' && (float) $shopSettings['tax_rate'] > 0)<p class="menu-shop-address">Prices exclude {{ $shopSettings['tax_name'] }} ({{ number_format((float) $shopSettings['tax_rate'], 2) }}%). Added to your bill at the counter.</p>@endif
+        </div>
         <div class="menu-search"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><label class="sr-only" for="menu-search">Search the menu</label><input id="menu-search" type="search" wire:model.live.debounce.300ms="search" placeholder="Search dishes and drinks">@if ($search !== '')<button type="button" wire:click="$set('search', '')" aria-label="Clear search">×</button>@endif</div>
         <nav class="category-nav" aria-label="Menu categories">
             <button type="button" :class="{ 'active': active === 'all' }" :aria-pressed="active === 'all'" @click="go('all')">All dishes</button>
@@ -214,7 +227,7 @@ new class extends Component {
                     @forelse ($cart as $line)
                         <div class="cart-line" wire:key="cart-{{ $line['key'] }}"><div><strong>{{ $line['name'] }}</strong><p>{{ collect($line['modifiers'])->pluck('name_en')->join(', ') }}</p>@if ($line['notes'])<p>{{ $line['notes'] }}</p>@endif<strong>RM{{ number_format($line['unit_price'] * $line['quantity'], 2) }}</strong></div><div class="cart-actions"><div class="stepper"><button type="button" wire:click="changeCartQuantity('{{ $line['key'] }}', -1)" aria-label="Decrease {{ $line['name'] }} quantity">−</button><span>{{ $line['quantity'] }}</span><button type="button" wire:click="changeCartQuantity('{{ $line['key'] }}', 1)" aria-label="Increase {{ $line['name'] }} quantity">+</button></div><button type="button" class="remove-line" wire:click="removeFromCart('{{ $line['key'] }}')">Remove</button></div></div>
                     @empty<p>Your order is empty. Add something delicious from the menu.</p>@endforelse
-                </div><div class="sheet-footer"><div class="cart-total"><strong>Total</strong><strong>RM{{ number_format($this->cartTotal, 2) }}</strong></div><button type="button" class="secondary-action" wire:click="$set('showCart', false)">Keep browsing</button><p class="selection-hint">Ordering from this menu will be available soon.</p><button type="button" class="primary-action" disabled>Place order · Coming soon</button></div>
+                </div><div class="sheet-footer"><div class="cart-total"><strong>{{ $shopSettings['tax_enabled'] === '1' && (float) $shopSettings['tax_rate'] > 0 ? 'Subtotal' : 'Total' }}</strong><strong>RM{{ number_format($this->cartTotal, 2) }}</strong></div><button type="button" class="secondary-action" wire:click="$set('showCart', false)">Keep browsing</button><p class="selection-hint">Ordering from this menu will be available soon.</p><button type="button" class="primary-action" disabled>Place order · Coming soon</button></div>
             </section>
         </div>
     @endif

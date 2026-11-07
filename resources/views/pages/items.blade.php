@@ -9,8 +9,15 @@ use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Illuminate\Support\Facades\Gate;
 
-new #[Title('Item')] class extends Component {
+new #[Title('Items')] class extends Component {
+    public function boot(): void
+    {
+        auth()->user()?->unsetRelation('staffRole');
+        Gate::authorize('manage-menu');
+    }
+
     use WithPagination;
     use WithFileUploads;
 
@@ -311,9 +318,9 @@ new #[Title('Item')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-4 operations-page">
+<div class="space-y-6 operations-page">
+    <x-page-heading title="Items" description="Manage menu items, pricing, photographs, and modifiers." />
     <x-action-feedback />
-    <h1 class="text-xl font-bold text-gray-900">Item Search</h1>
 
     <x-card>
         <div class="flex items-center gap-3 mb-4">

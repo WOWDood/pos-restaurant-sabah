@@ -4,8 +4,15 @@ use App\Models\Category;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Illuminate\Support\Facades\Gate;
 
-new #[Title('Category')] class extends Component {
+new #[Title('Categories')] class extends Component {
+    public function boot(): void
+    {
+        auth()->user()?->unsetRelation('staffRole');
+        Gate::authorize('manage-menu');
+    }
+
     use WithPagination;
 
     public string $search = '';
@@ -102,9 +109,9 @@ new #[Title('Category')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-4">
+<div class="space-y-6">
+    <x-page-heading title="Categories" description="Manage menu categories and their display order." />
     <x-action-feedback />
-    <h1 class="text-xl font-bold text-gray-900">Category Search</h1>
 
     <x-card>
         <div class="flex items-center gap-3 mb-4">

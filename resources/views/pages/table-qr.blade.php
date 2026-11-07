@@ -3,8 +3,15 @@
 use App\Models\RestaurantTable;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Illuminate\Support\Facades\Gate;
 
 new #[Title('Table QR Codes')] class extends Component {
+    public function boot(): void
+    {
+        auth()->user()?->unsetRelation('staffRole');
+        Gate::authorize('manage-tables');
+    }
+
     public function getTablesProperty()
     {
         return RestaurantTable::orderBy('name')->get();
@@ -24,10 +31,7 @@ new #[Title('Table QR Codes')] class extends Component {
 
 <div class="w-full min-w-0 space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between print-hidden">
-        <div class="min-w-0 max-w-2xl">
-            <h1 class="text-xl font-bold text-gray-900">Table QR Codes</h1>
-            <p class="text-sm leading-relaxed text-gray-600 mt-1">Print these QR codes and stick them on each table. Customers scan to open the ordering menu.</p>
-        </div>
+        <x-page-heading title="Table QR Codes" description="Print QR codes for each table so customers can access the ordering menu." class="min-w-0 max-w-2xl" />
         <button type="button" onclick="printAll()" class="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:ml-auto sm:w-auto print-hidden">Print All</button>
     </div>
 

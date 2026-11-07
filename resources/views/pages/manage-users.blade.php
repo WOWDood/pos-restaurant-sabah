@@ -2,6 +2,7 @@
 
 use App\Concerns\PasswordValidationRules;
 use App\Models\User;
+use App\Models\StaffRole;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,7 @@ new #[Title('Manage Users')] class extends Component {
     public string $email = '';
     public string $code = '';
     public string $userType = User::TYPE_STAFF;
+    public ?int $staffRoleId = null;
     public string $password = '';
     public string $password_confirmation = '';
     #[Locked]
@@ -49,6 +51,7 @@ new #[Title('Manage Users')] class extends Component {
         $this->email = $user->email;
         $this->code = $user->code ?? '';
         $this->userType = $user->isAdministrator() ? User::TYPE_ADMIN : User::TYPE_STAFF;
+        $this->staffRoleId = $user->staff_role_id;
         $this->showModal = true;
     }
 
@@ -65,6 +68,7 @@ new #[Title('Manage Users')] class extends Component {
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->editingId)],
             'code' => ['required', 'string', 'max:100', Rule::unique('users', 'code')->ignore($this->editingId)],
             'userType' => ['required', Rule::in([User::TYPE_ADMIN, User::TYPE_STAFF])],
+            'staffRoleId' => ['nullable', 'integer', Rule::exists('staff_roles', 'id')],
         ];
         if (! $this->editingId) {
             $rules['password'] = $this->passwordRules();
@@ -81,6 +85,7 @@ new #[Title('Manage Users')] class extends Component {
             }
 
             $attributes = ['name' => $data['name'], 'email' => $data['email'], 'code' => $data['code'] ?: null, 'user_type' => $data['userType']];
+            $attributes['staff_role_id'] = $data['userType'] === User::TYPE_ADMIN ? null : $data['staffRoleId'];
             if ($this->editingId) {
                 $user = User::query()->lockForUpdate()->findOrFail($this->editingId);
                 if ($user->email !== $data['email']) {
@@ -103,7 +108,7 @@ new #[Title('Manage Users')] class extends Component {
 
     public function getUsersProperty()
     {
-        return User::query()
+        return User::query()->with('staffRole')
             ->when($this->search, fn ($query) => $query->where(fn ($query) => $query
                 ->where('name', 'like', "%{$this->search}%")
                 ->orWhere('email', 'like', "%{$this->search}%")
@@ -113,25 +118,28 @@ new #[Title('Manage Users')] class extends Component {
 
     private function resetForm(): void
     {
-        $this->reset(['name', 'email', 'code', 'userType', 'password', 'password_confirmation', 'editingId']);
+        $this->reset(['name', 'email', 'code', 'userType', 'staffRoleId', 'password', 'password_confirmation', 'editingId']);
         $this->resetValidation();
+    }
+
+    public function getStaffRolesProperty(): \Illuminate\Database\Eloquent\Collection
+    {
+        return StaffRole::query()->orderBy('name')->get();
     }
 }; ?>
 
-<div class="space-y-4">
-    <div>
-        <h1 class="text-xl font-bold text-gray-900">Manage Users</h1>
-        <p class="mt-1 text-sm text-gray-600">Create staff accounts and manage administrator access.</p>
-    </div>
+<div class="pos-light-surface space-y-6">
+    <x-page-heading title="Manage Users" description="Manage staff accounts, roles, and administrator access." />
+    <x-shop-settings-nav />
     @if (session()->has('user_saved'))
         <div role="status" class="rounded bg-green-100 px-4 py-3 text-sm text-green-800">{{ session('user_saved') }}</div>
     @endif
     <x-card>
         <div class="mb-4 flex flex-wrap items-end gap-3">
-            <label class="min-w-48 flex-1 text-sm font-medium text-gray-700">Search users
-                <input type="search" wire:model.live.debounce.300ms="search" placeholder="Name, email or code" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            <label class="min-w-48 flex-1 text-sm font-medium text-gray-700">Search Users
+                <input type="search" wire:model.live.debounce.300ms="search" placeholder="Name, email, or staff code" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm" />
             </label>
-            <button type="button" wire:click="openCreate" class="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white">+ Add user</button>
+            <button type="button" wire:click="openCreate" class="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white">+ Add User</button>
         </div>
         <x-table>
             <thead class="bg-gray-50"><tr>
@@ -141,7 +149,7 @@ new #[Title('Manage Users')] class extends Component {
                 @forelse ($this->users as $user)
                     <tr wire:key="user-{{ $user->id }}" class="border-t border-gray-100">
                         <td class="px-3 py-2">{{ $user->name }}</td><td class="px-3 py-2">{{ $user->email }}</td><td class="px-3 py-2">{{ $user->code ?? '—' }}</td>
-                        <td class="px-3 py-2">{{ $user->isAdministrator() ? 'Administrator' : 'Staff' }}</td>
+                        <td class="px-3 py-2">{{ $user->roleName() }}</td>
                         <td class="px-3 py-2"><div class="row-actions"><button type="button" wire:click="openEdit({{ $user->id }})" class="row-action" aria-label="Edit {{ $user->name }}">Edit</button></div></td>
                     </tr>
                 @empty
@@ -151,23 +159,34 @@ new #[Title('Manage Users')] class extends Component {
         </x-table>
         <div class="mt-4">{{ $this->users->links() }}</div>
     </x-card>
-    <x-modal :show="$showModal" title="{{ $editingId ? 'Edit user' : 'Add user' }}" close="closeModal">
+    <x-modal :show="$showModal" title="{{ $editingId ? 'Edit User' : 'Add User' }}" close="closeModal">
         <form wire:submit="save" class="space-y-4">
-            <flux:input wire:model="name" label="Name" required />
-            <flux:input wire:model="email" type="email" label="Email" required />
-            <flux:input wire:model="code" label="Staff code" required />
-            <flux:select wire:model="userType" label="Access">
+            <flux:input wire:model="name" label="Full Name" required />
+            <flux:input wire:model="email" type="email" label="Email Address" required />
+            <flux:input wire:model="code" label="Staff Code" required />
+            <flux:select wire:model.live="userType" label="Access Level">
                 <flux:select.option value="staff">Staff</flux:select.option>
                 <flux:select.option value="admin">Administrator</flux:select.option>
             </flux:select>
+            @if ($userType === \App\Models\User::TYPE_STAFF)
+                <flux:select wire:model="staffRoleId" label="Staff Role" description="Choose a custom role to limit access, or leave full operational access.">
+                    <flux:select.option value="">Staff — full operational access</flux:select.option>
+                    @foreach ($this->staffRoles as $role)
+                        <flux:select.option :value="$role->id" wire:key="user-role-{{ $role->id }}">{{ $role->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            @endif
             @if (! $editingId)
-                <flux:input wire:model="password" type="password" label="Temporary password" autocomplete="new-password" required />
-                <flux:input wire:model="password_confirmation" type="password" label="Confirm password" autocomplete="new-password" required />
+                <flux:input wire:model="password" type="password" label="Temporary Password" autocomplete="new-password" required />
+                <flux:input wire:model="password_confirmation" type="password" label="Confirm Password" autocomplete="new-password" required />
                 <p class="text-sm text-gray-600">The user must verify their email before accessing the POS.</p>
             @else
                 <p class="text-sm text-gray-600">Changing the email requires the user to verify the new address.</p>
             @endif
-            <div class="flex justify-end gap-2"><flux:button type="button" wire:click="closeModal">Cancel</flux:button><flux:button type="submit" variant="primary">Save user</flux:button></div>
+            <div class="flex flex-wrap justify-end gap-2">
+                <flux:button type="button" wire:click="closeModal" class="row-action row-action-neutral">Cancel</flux:button>
+                <flux:button type="submit" variant="primary" class="row-action row-action-primary">Save User</flux:button>
+            </div>
         </form>
     </x-modal>
 </div>

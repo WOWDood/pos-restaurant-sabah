@@ -11,7 +11,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7v5h-5M4 17v-5h5m-4.3-3a7.5 7.5 0 0 1 12.4-3L20 9M4 15l2.9 3A7.5 7.5 0 0 0 19.3 15"/></svg>
                     Refresh
                 </a>
-                <a href="{{ route('pos') }}" wire:navigate class="dashboard-button dashboard-button-primary">Open POS <span aria-hidden="true">→</span></a>
+                @can('use-pos')<a href="{{ route('pos') }}" wire:navigate class="dashboard-button dashboard-button-primary">Open POS <span aria-hidden="true">→</span></a>@endcan
             </div>
         </header>
 
@@ -45,7 +45,7 @@
                 <p class="dashboard-metric-label">Tables available</p>
                 <p class="dashboard-value">{{ $availableTables }} <span class="dashboard-muted">/ {{ $totalTables }}</span></p>
                 <p class="dashboard-muted dashboard-small">{{ $occupiedTables }} with open orders</p>
-                <a href="{{ route('pos') }}" wire:navigate class="dashboard-metric-foot dashboard-link">View tables <span aria-hidden="true">→</span></a>
+                @can('use-pos')<a href="{{ route('pos') }}" wire:navigate class="dashboard-metric-foot dashboard-link">View tables <span aria-hidden="true">→</span></a>@endcan
             </x-card>
         </section>
 
@@ -97,14 +97,17 @@
                 </div>
                 @if ($totalTables === 0)
                     <p class="dashboard-muted dashboard-small mt-3">Add your first table to start taking dine-in orders.</p>
-                    <a href="{{ route('tables') }}" wire:navigate class="dashboard-link dashboard-inline-link">Set up tables <span aria-hidden="true">→</span></a>
+                    @can('manage-tables')<a href="{{ route('tables') }}" wire:navigate class="dashboard-link dashboard-inline-link">Set up tables <span aria-hidden="true">→</span></a>@endcan
                 @endif
                 <ul class="dashboard-open-list">
                     @forelse ($openOrders as $order)
-                        <li><a href="{{ route('pos.order', $order) }}" wire:navigate class="dashboard-order-link">
+                        <li>@can('use-pos')<a href="{{ route('pos.order', $order) }}" wire:navigate class="dashboard-order-link">
                             <div class="min-w-0"><p class="font-semibold break-words">{{ $order->table?->name ?? 'No table assigned' }}</p><p class="dashboard-muted dashboard-small">#{{ $order->id }} · {{ \App\Models\Order::statusLabel($order->status) }}</p><p class="dashboard-muted dashboard-small">Opened {{ $order->created_at->setTimezone('Asia/Kuala_Lumpur')->diffForHumans($updatedAt) }}</p></div>
                             <span class="dashboard-order-amount">RM{{ number_format($order->total, 2) }} <span aria-hidden="true">›</span></span>
-                        </a></li>
+                        </a>@else<div class="dashboard-order-link">
+                            <div class="min-w-0"><p class="font-semibold break-words">{{ $order->table?->name ?? 'No table assigned' }}</p><p class="dashboard-muted dashboard-small">#{{ $order->id }} · {{ \App\Models\Order::statusLabel($order->status) }}</p><p class="dashboard-muted dashboard-small">Opened {{ $order->created_at->setTimezone('Asia/Kuala_Lumpur')->diffForHumans($updatedAt) }}</p></div>
+                            <span class="dashboard-order-amount">RM{{ number_format($order->total, 2) }} <span aria-hidden="true">›</span></span>
+                        </div>@endcan</li>
                     @empty
                         <li class="dashboard-empty"><span class="dashboard-empty-icon" aria-hidden="true">✓</span><p class="font-semibold">All bills settled</p><p class="dashboard-muted dashboard-small mt-1">New and pre-orders will appear here.</p></li>
                     @endforelse
@@ -112,20 +115,24 @@
                 @if ($openOrderCount > 5)
                     <p class="dashboard-muted dashboard-small mt-2">Showing 5 of {{ $openOrderCount }} open bills.</p>
                 @endif
-                <a href="{{ route('pos') }}" wire:navigate class="dashboard-link dashboard-inline-link">{{ $openOrderCount > 0 ? 'Manage tables and orders' : 'Start a new order' }} <span aria-hidden="true">→</span></a>
+                @can('use-pos')<a href="{{ route('pos') }}" wire:navigate class="dashboard-link dashboard-inline-link">{{ $openOrderCount > 0 ? 'Manage tables and orders' : 'Start a new order' }} <span aria-hidden="true">→</span></a>@endcan
             </x-card>
 
             <x-card class="dashboard-panel">
-                <div class="dashboard-section-head"><div><h2>Recent orders</h2><p class="dashboard-muted dashboard-small mt-1">Last 6 updated · all statuses</p></div><a href="{{ route('orders') }}" wire:navigate class="dashboard-link dashboard-inline-link">View all <span class="sr-only">orders</span> <span aria-hidden="true">→</span></a></div>
+                <div class="dashboard-section-head"><div><h2>Recent orders</h2><p class="dashboard-muted dashboard-small mt-1">Last 6 updated · all statuses</p></div>@can('view-orders')<a href="{{ route('orders') }}" wire:navigate class="dashboard-link dashboard-inline-link">View all <span class="sr-only">orders</span> <span aria-hidden="true">→</span></a>@endcan</div>
                 <ul class="dashboard-recent-list">
                     @forelse ($recentOrders as $order)
-                        <li><a href="{{ route('pos.order', $order) }}" wire:navigate class="dashboard-recent-order">
+                        <li>@can('use-pos')<a href="{{ route('pos.order', $order) }}" wire:navigate class="dashboard-recent-order">
                             <span class="dashboard-recent-id">#{{ $order->id }}<span class="dashboard-muted dashboard-small">{{ $order->updated_at->setTimezone('Asia/Kuala_Lumpur')->format('j M, g:i a') }}</span></span>
                             <span class="dashboard-recent-table">{{ $order->table?->name ?? 'No table assigned' }}<span @class(['dashboard-status', 'dashboard-status-'.$order->status])>{{ \App\Models\Order::statusLabel($order->status) }}</span></span>
                             <span class="dashboard-order-amount">RM{{ number_format($order->total, 2) }} <span aria-hidden="true">›</span></span>
-                        </a></li>
+                        </a>@else<div class="dashboard-recent-order">
+                            <span class="dashboard-recent-id">#{{ $order->id }}<span class="dashboard-muted dashboard-small">{{ $order->updated_at->setTimezone('Asia/Kuala_Lumpur')->format('j M, g:i a') }}</span></span>
+                            <span class="dashboard-recent-table">{{ $order->table?->name ?? 'No table assigned' }}<span @class(['dashboard-status', 'dashboard-status-'.$order->status])>{{ \App\Models\Order::statusLabel($order->status) }}</span></span>
+                            <span class="dashboard-order-amount">RM{{ number_format($order->total, 2) }} <span aria-hidden="true">›</span></span>
+                        </div>@endcan</li>
                     @empty
-                        <li class="dashboard-empty"><p class="font-semibold">Your first order starts here</p><p class="dashboard-muted mt-1">Open POS, choose a table, and add items to begin.</p><a href="{{ route('pos') }}" wire:navigate class="dashboard-link dashboard-inline-link">Open POS <span aria-hidden="true">→</span></a></li>
+                        <li class="dashboard-empty"><p class="font-semibold">Your first order starts here</p><p class="dashboard-muted mt-1">Open POS, choose a table, and add items to begin.</p>@can('use-pos')<a href="{{ route('pos') }}" wire:navigate class="dashboard-link dashboard-inline-link">Open POS <span aria-hidden="true">→</span></a>@endcan</li>
                     @endforelse
                 </ul>
             </x-card>

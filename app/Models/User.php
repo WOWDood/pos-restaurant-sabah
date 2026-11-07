@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -28,7 +29,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'code', 'email', 'password', 'user_type', 'email_verified_at'])]
+#[Fillable(['name', 'code', 'email', 'password', 'user_type', 'email_verified_at', 'staff_role_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -44,6 +45,32 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->user_type === self::TYPE_ADMIN;
     }
 
+    public function staffRole(): BelongsTo
+    {
+        return $this->belongsTo(StaffRole::class);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if (! array_key_exists($permission, StaffRole::PERMISSIONS)) {
+            return false;
+        }
+
+        if ($this->isAdministrator() || $this->staff_role_id === null) {
+            return true;
+        }
+
+        $permissions = $this->staffRole?->permissions ?? [];
+
+        return in_array($permission, $permissions, true)
+            || ($permission === 'view-orders' && in_array('use-pos', $permissions, true));
+    }
+
+    public function roleName(): string
+    {
+        return $this->isAdministrator() ? 'Administrator' : ($this->staffRole?->name ?? 'Staff');
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -54,6 +81,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'staff_role_id' => 'integer',
         ];
     }
 

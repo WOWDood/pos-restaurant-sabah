@@ -13,11 +13,13 @@ class CustomerOrderController extends Controller
     public function create(string $table): Response
     {
         $restaurantTable = ctype_digit($table) ? RestaurantTable::find($table) : null;
-        $businessName = BusinessSetting::where('key', 'business_name')->value('value') ?: 'Restaurant';
+        $settings = BusinessSetting::settings();
+        $businessName = $settings['business_name'];
 
         return response()->view('customer-order', [
             'table' => $restaurantTable,
             'businessName' => $businessName,
+            'shopSettings' => $settings,
         ], $restaurantTable ? 200 : 404);
     }
 

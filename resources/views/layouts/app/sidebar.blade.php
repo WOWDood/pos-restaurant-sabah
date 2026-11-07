@@ -23,7 +23,10 @@
                 aria-label="Restaurant workspace"
             >
                 <div class="pos-sidebar-heading">
-                    <span class="pos-sidebar-name">Kedai Soto Banso</span>
+                    @if ($shopLogoUrl)
+                        <img src="{{ $shopLogoUrl }}" alt="" class="pos-sidebar-shop-logo" width="32" height="32" />
+                    @endif
+                    <span class="pos-sidebar-name">{{ $shopSettings['business_name'] }}</span>
                     <a href="{{ route('home') }}" class="pos-sidebar-home" aria-label="{{ __('Website home') }}" title="{{ __('Website home') }}" wire:navigate>
                         <flux:icon.home class="size-4" aria-hidden="true" />
                     </a>
@@ -31,10 +34,11 @@
 
                 <nav class="pos-sidebar-nav" aria-label="Main navigation">
                     @foreach ([
-                        ['Dashboard', route('dashboard'), request()->routeIs('dashboard')],
-                        ['Orders', route('orders'), request()->routeIs('orders')],
-                        ['POS', route('pos'), request()->routeIs('pos')],
-                    ] as [$label, $href, $active])
+                        ['Dashboard', 'view-dashboard', route('dashboard'), request()->routeIs('dashboard')],
+                        ['Orders', 'view-orders', route('orders'), request()->routeIs('orders')],
+                        ['POS', 'use-pos', route('pos'), request()->routeIs('pos')],
+                    ] as [$label, $permission, $href, $active])
+                        @can($permission)
                         <a href="{{ $href }}" class="pos-sidebar-link {{ $active ? 'is-active' : '' }}" @if($active) aria-current="page" @endif @if($href !== '#' && $label !== 'Orders') wire:navigate @endif>
                             @if ($label === 'Orders')
                                 <flux:icon.document-text class="pos-sidebar-icon" aria-hidden="true" />
@@ -45,8 +49,10 @@
                             @endif
                             {{ __($label) }}
                         </a>
+                        @endcan
                     @endforeach
 
+                    @if (auth()->user()->canAny(['manage-menu', 'manage-tables', 'manage-payment-methods', 'manage-shop']))
                     {{-- Setup (expandable) --}}
                     <details class="pos-sidebar-group" open>
                         <summary class="pos-sidebar-link">
@@ -55,28 +61,39 @@
                             <flux:icon.chevron-right class="pos-sidebar-chevron" aria-hidden="true" />
                         </summary>
                         <div class="pos-sidebar-submenu">
+                            @can('manage-menu')
                             <a href="{{ route('categories') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('categories') ? 'is-active' : '' }}" @if(request()->routeIs('categories')) aria-current="page" @endif wire:navigate>
-                                {{ __('Category') }}
+                                {{ __('Categories') }}
                             </a>
+                            @endcan
+                            @can('manage-menu')
                             <a href="{{ route('items') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('items') ? 'is-active' : '' }}" @if(request()->routeIs('items')) aria-current="page" @endif wire:navigate>
-                                {{ __('Item') }}
+                                {{ __('Items') }}
                             </a>
+                            @endcan
+                            @can('manage-tables')
                             <a href="{{ route('tables') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('tables') ? 'is-active' : '' }}" @if(request()->routeIs('tables')) aria-current="page" @endif wire:navigate>
-                                {{ __('Table') }}
+                                {{ __('Tables') }}
                             </a>
+                            @endcan
+                            @can('manage-tables')
                             <a href="{{ route('table-qr') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('table-qr') ? 'is-active' : '' }}" @if(request()->routeIs('table-qr')) aria-current="page" @endif wire:navigate>
-                                {{ __('Table QR') }}
+                                {{ __('Table QR Codes') }}
                             </a>
+                            @endcan
+                            @can('manage-payment-methods')
                             <a href="{{ route('payment-methods') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('payment-methods') ? 'is-active' : '' }}" @if(request()->routeIs('payment-methods')) aria-current="page" @endif wire:navigate>
-                                {{ __('Payment Method') }}
+                                {{ __('Payment Methods') }}
                             </a>
+                            @endcan
                             @can('manage-users')
-                                <a href="{{ route('admin.users') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('admin.users') ? 'is-active' : '' }}" @if(request()->routeIs('admin.users')) aria-current="page" @endif wire:navigate>
-                                    {{ __('Manage Users') }}
+                                <a href="{{ route('admin.shop-settings') }}" class="pos-sidebar-link pos-sidebar-sublink {{ request()->routeIs('admin.*') ? 'is-active' : '' }}" @if(request()->routeIs('admin.*')) aria-current="page" @endif wire:navigate>
+                                    {{ __('Shop Settings') }}
                                 </a>
                             @endcan
                         </div>
                     </details>
+                    @endif
                 </nav>
 
                 <div class="pos-sidebar-footer">

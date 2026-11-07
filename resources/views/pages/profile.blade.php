@@ -120,7 +120,7 @@ new #[Title('Profile')] class extends Component {
                 <h2 class="break-words text-xl font-semibold text-gray-900">{{ Auth::user()->name }}</h2>
                 <p class="break-all text-gray-600">{{ Auth::user()->email }}</p>
             </div>
-            <span class="col-start-2 justify-self-start rounded-full bg-indigo-50 px-3 py-1 font-medium text-indigo-800 sm:shrink-0">{{ Auth::user()->isAdministrator() ? 'Administrator' : 'Staff' }}</span>
+            <span class="col-start-2 justify-self-start rounded-full bg-indigo-50 px-3 py-1 font-medium text-indigo-800 sm:shrink-0">{{ Auth::user()->roleName() }}</span>
         </div>
         <dl class="mt-5 grid gap-4 border-t border-gray-100 pt-5 sm:grid-cols-3">
             <div><dt class="text-gray-500">Staff code</dt><dd class="mt-1 break-words font-medium">{{ Auth::user()->code ?? 'Not assigned' }}</dd></div>

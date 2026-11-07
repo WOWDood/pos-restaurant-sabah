@@ -11,7 +11,7 @@
 </head>
 <body class="customer-menu-body">
     @if ($table)
-        <livewire:pages::customer-menu :table="$table" :business-name="$businessName" />
+        <livewire:pages::customer-menu :table="$table" :business-name="$businessName" :shop-settings="$shopSettings" />
     @else
         <main class="customer-not-found">
             <p class="customer-eyebrow">{{ $businessName }}</p>

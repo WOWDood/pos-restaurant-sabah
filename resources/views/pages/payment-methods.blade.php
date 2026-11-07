@@ -4,8 +4,15 @@ use App\Models\PaymentMethod;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Illuminate\Support\Facades\Gate;
 
 new #[Title('Payment Methods')] class extends Component {
+    public function boot(): void
+    {
+        auth()->user()?->unsetRelation('staffRole');
+        Gate::authorize('manage-payment-methods');
+    }
+
     use WithPagination;
 
     public string $search = '';
@@ -91,9 +98,9 @@ new #[Title('Payment Methods')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-4">
+<div class="space-y-6">
+    <x-page-heading title="Payment Methods" description="Configure available payment methods and reference requirements." />
     <x-action-feedback />
-    <h1 class="text-xl font-bold text-gray-900">Payment Method Search</h1>
 
     <x-card>
         <div class="flex items-center gap-3 mb-4">

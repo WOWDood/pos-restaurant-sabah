@@ -148,3 +148,7 @@
         --menu-border: #4b5563;
     }
 }
+.menu-shop-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.menu-shop-brand > div { min-width: 0; }
+.menu-shop-logo { width: 48px; height: 48px; flex-shrink: 0; object-fit: contain; border-radius: 12px; padding: 4px; background: #ffffff; }
+.menu-shop-address { font-size: .875rem; color: var(--menu-muted); white-space: pre-line; overflow-wrap: anywhere; }

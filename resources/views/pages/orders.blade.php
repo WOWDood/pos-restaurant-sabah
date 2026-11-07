@@ -7,10 +7,17 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Illuminate\Support\Facades\Gate;
 use Livewire\WithPagination;
 
 new #[Title('Orders')] class extends Component
 {
+    public function boot(): void
+    {
+        auth()->user()?->unsetRelation('staffRole');
+        Gate::authorize('view-orders');
+    }
+
     use WithPagination;
 
     public ?string $table = null;
@@ -165,7 +172,7 @@ new #[Title('Orders')] class extends Component
 
     public function getBusinessSettingsProperty()
     {
-        return BusinessSetting::query()->pluck('value', 'key');
+        return BusinessSetting::settings();
     }
 
     public function getOrdersProperty()
@@ -262,10 +269,10 @@ new #[Title('Orders')] class extends Component
                         <td data-label="Created" class="px-3 py-2">{{ $order->created_at->setTimezone('Asia/Kuala_Lumpur')->format('d M Y H:i') }}</td>
                         <td data-label="Actions" class="px-3 py-2 text-right">
                             <div class="row-actions row-actions-end">
-                                <a href="{{ route('pos.order', $order) }}" class="row-action row-action-primary" wire:navigate>
+                                @can('use-pos')<a href="{{ route('pos.order', $order) }}" class="row-action row-action-primary" wire:navigate>
                                     <flux:icon.list-bullet class="w-3.5 h-3.5" />
                                     Open
-                                </a>
+                                </a>@endcan
                                 <button wire:click="openOrderDetail({{ $order->id }})" class="row-action row-action-neutral">View</button>
                                 @if ($order->status === Order::STATUS_PAID)
                                     <button wire:click="openReceipt({{ $order->id }})" class="row-action">Print</button>
@@ -340,8 +347,9 @@ new #[Title('Orders')] class extends Component
             <div id="receipt-print" class="receipt-print space-y-3 text-sm">
                 <div class="text-center">
                     <p class="text-lg font-bold">{{ $settings['business_name'] ?? 'Kedai Soto Banso' }}</p>
-                    <p>{{ $settings['location'] ?? '' }}</p>
+                    <p class="whitespace-pre-line">{{ $settings['location'] ?? '' }}</p>
                     <p>{{ $settings['phone'] ?? '' }}</p>
+                @if ($settings['email'])<p>{{ $settings['email'] }}</p>@endif
                 </div>
                 <div class="border-t border-b border-gray-300 py-2 space-y-1">
                     <div class="flex justify-between"><span>Receipt</span><span>{{ $receipt?->receipt_number ?? '-' }}</span></div>
@@ -364,13 +372,14 @@ new #[Title('Orders')] class extends Component
                     @endforeach
                 </div>
                 <div class="border-t border-gray-300 pt-2 space-y-1">
+                    <x-order-charges :order="$selectedOrder" />
                     <div class="flex justify-between font-bold"><span>Total</span><span>RM{{ number_format((float) $selectedOrder->total, 2) }}</span></div>
                     <div class="flex justify-between"><span>Payment</span><span>{{ $payment?->method?->description ?? '-' }}</span></div>
                     @if ($payment?->reference)
                         <div class="flex justify-between"><span>Reference</span><span>{{ $payment->reference }}</span></div>
                     @endif
                 </div>
-                <p class="text-center font-medium pt-2">Thank you for your visit!</p>
+                <p class="text-center font-medium pt-2">{{ $settings['receipt_footer'] }}</p>
                 <div class="flex justify-end gap-2 pt-3 print-hidden">
                     <button wire:click="closeReceipt" class="px-4 py-2 text-sm border border-gray-300 rounded">Close</button>
                     <button wire:click="markReceiptPrinted" onclick="window.print()" class="px-4 py-2 text-sm bg-indigo-600 text-white rounded">Print</button>

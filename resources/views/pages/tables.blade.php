@@ -4,8 +4,15 @@ use App\Models\RestaurantTable;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Illuminate\Support\Facades\Gate;
 
-new #[Title('Table')] class extends Component {
+new #[Title('Tables')] class extends Component {
+    public function boot(): void
+    {
+        auth()->user()?->unsetRelation('staffRole');
+        Gate::authorize('manage-tables');
+    }
+
     use WithPagination;
 
     public string $search = '';
@@ -73,9 +80,9 @@ new #[Title('Table')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-4">
+<div class="space-y-6">
+    <x-page-heading title="Tables" description="Manage restaurant tables and seating references." />
     <x-action-feedback />
-    <h1 class="text-xl font-bold text-gray-900">Table Search</h1>
 
     <x-card>
         <div class="flex items-center gap-3 mb-4">

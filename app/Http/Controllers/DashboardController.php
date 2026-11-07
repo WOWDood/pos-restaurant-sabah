@@ -10,11 +10,16 @@ use App\Models\RestaurantTable;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
+        if (Gate::denies('view-dashboard')) {
+            return redirect()->route('profile');
+        }
         $updatedAt = CarbonImmutable::now('Asia/Kuala_Lumpur');
         $today = $updatedAt->startOfDay();
         $storageTimezone = config('app.timezone');

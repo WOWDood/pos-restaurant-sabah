@@ -36,12 +36,34 @@ class Order extends Model
         self::STATUS_PRE_ORDER,
     ];
 
-    protected $fillable = ['restaurant_table_id', 'status', 'total', 'paid_at', 'created_by'];
+    protected $fillable = ['restaurant_table_id', 'status', 'total', 'paid_at', 'created_by', 'subtotal', 'tax_name', 'tax_rate', 'tax_amount'];
 
     protected $casts = [
         'total' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
         'paid_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order): void {
+            if (! array_key_exists('tax_rate', $order->getAttributes())) {
+                $settings = BusinessSetting::settings();
+                $order->tax_rate = $settings['tax_enabled'] === '1' ? $settings['tax_rate'] : 0;
+                $order->tax_name = $settings['tax_enabled'] === '1' ? $settings['tax_name'] : null;
+            }
+        });
+    }
+
+    public function recalculateTotals(): void
+    {
+        $subtotal = round((float) $this->items()->sum('subtotal'), 2);
+        $taxAmount = round($subtotal * (float) $this->tax_rate / 100, 2);
+
+        $this->update(['subtotal' => $subtotal, 'tax_amount' => $taxAmount, 'total' => round($subtotal + $taxAmount, 2)]);
+    }
 
     public function table(): BelongsTo
     {
