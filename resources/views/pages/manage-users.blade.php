@@ -142,7 +142,7 @@ new #[Title('Manage Users')] class extends Component {
                     <tr wire:key="user-{{ $user->id }}" class="border-t border-gray-100">
                         <td class="px-3 py-2">{{ $user->name }}</td><td class="px-3 py-2">{{ $user->email }}</td><td class="px-3 py-2">{{ $user->code ?? '—' }}</td>
                         <td class="px-3 py-2">{{ $user->isAdministrator() ? 'Administrator' : 'Staff' }}</td>
-                        <td class="px-3 py-2"><button type="button" wire:click="openEdit({{ $user->id }})" class="text-indigo-700 hover:underline" aria-label="Edit {{ $user->name }}">Edit</button></td>
+                        <td class="px-3 py-2"><div class="row-actions"><button type="button" wire:click="openEdit({{ $user->id }})" class="row-action" aria-label="Edit {{ $user->name }}">Edit</button></div></td>
                     </tr>
                 @empty
                     <tr><td colspan="5" class="px-3 py-6 text-center text-gray-500">No users found.</td></tr>

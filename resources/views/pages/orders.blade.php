@@ -261,14 +261,16 @@ new #[Title('Orders')] class extends Component
                         <td data-label="Payment" class="px-3 py-2">{{ $order->payments->sortByDesc('id')->first()?->method?->description ?? '-' }}</td>
                         <td data-label="Created" class="px-3 py-2">{{ $order->created_at->setTimezone('Asia/Kuala_Lumpur')->format('d M Y H:i') }}</td>
                         <td data-label="Actions" class="px-3 py-2 text-right">
-                            <a href="{{ route('pos.order', $order) }}" class="inline-flex items-center gap-1 bg-indigo-600 text-white text-sm font-medium px-3 py-1.5 rounded" wire:navigate>
-                                <flux:icon.list-bullet class="w-3.5 h-3.5" />
-                                Open
-                            </a>
-                            <button wire:click="openOrderDetail({{ $order->id }})" class="ml-2 text-sm text-gray-600 hover:underline">View</button>
-                            @if ($order->status === Order::STATUS_PAID)
-                                <button wire:click="openReceipt({{ $order->id }})" class="ml-2 text-sm text-indigo-600 hover:underline">Print</button>
-                            @endif
+                            <div class="row-actions row-actions-end">
+                                <a href="{{ route('pos.order', $order) }}" class="row-action row-action-primary" wire:navigate>
+                                    <flux:icon.list-bullet class="w-3.5 h-3.5" />
+                                    Open
+                                </a>
+                                <button wire:click="openOrderDetail({{ $order->id }})" class="row-action row-action-neutral">View</button>
+                                @if ($order->status === Order::STATUS_PAID)
+                                    <button wire:click="openReceipt({{ $order->id }})" class="row-action">Print</button>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty

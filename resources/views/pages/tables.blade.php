@@ -95,8 +95,10 @@ new #[Title('Table')] class extends Component {
                     <tr class="border-t border-gray-100">
                         <td class="px-3 py-2">{{ $table->name }}</td>
                         <td class="px-3 py-2">
-                            <button wire:click="openEdit({{ $table->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
-                            <button wire:click="confirmDelete({{ $table->id }})" class="text-red-600 hover:underline">Delete</button>
+                            <div class="row-actions">
+                                <button wire:click="openEdit({{ $table->id }})" class="row-action">Edit</button>
+                                <button wire:click="confirmDelete({{ $table->id }})" class="row-action row-action-danger">Delete</button>
+                            </div>
                         </td>
                     </tr>
                 @endforeach

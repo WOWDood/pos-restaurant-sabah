@@ -125,8 +125,10 @@ new #[Title('Payment Methods')] class extends Component {
                             <span class="px-2 py-0.5 rounded text-sm {{ $pm->ref_required ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600' }}">{{ $pm->ref_required ? 'Yes' : 'No' }}</span>
                         </td>
                         <td class="px-3 py-2">
-                            <button wire:click="openEdit({{ $pm->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
-                            <button wire:click="confirmDelete({{ $pm->id }})" class="text-red-600 hover:underline">Delete</button>
+                            <div class="row-actions">
+                                <button wire:click="openEdit({{ $pm->id }})" class="row-action">Edit</button>
+                                <button wire:click="confirmDelete({{ $pm->id }})" class="row-action row-action-danger">Delete</button>
+                            </div>
                         </td>
                     </tr>
                 @endforeach

@@ -354,10 +354,12 @@ new #[Title('Item')] class extends Component {
                             <span class="px-2 py-0.5 rounded text-sm bg-gray-100 text-gray-600">{{ $item->type ?? 'General' }}</span>
                         </td>
                         <td data-label="Actions" class="px-3 py-2">
-                            <button wire:click="openPhotos({{ $item->id }})" class="text-purple-600 hover:underline mr-2">Photos</button>
-                            <button wire:click="openModifiers({{ $item->id }})" class="text-green-600 hover:underline mr-2">Modifiers</button>
-                            <button wire:click="openEdit({{ $item->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
-                            <button wire:click="confirmDelete({{ $item->id }})" class="text-red-600 hover:underline">Delete</button>
+                            <div class="row-actions">
+                                <button wire:click="openPhotos({{ $item->id }})" class="row-action">Photos</button>
+                                <button wire:click="openModifiers({{ $item->id }})" class="row-action">Modifiers</button>
+                                <button wire:click="openEdit({{ $item->id }})" class="row-action">Edit</button>
+                                <button wire:click="confirmDelete({{ $item->id }})" class="row-action row-action-danger">Delete</button>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -476,13 +478,13 @@ new #[Title('Item')] class extends Component {
                         <div class="border border-gray-200 rounded p-2">
                             <img src="{{ \Illuminate\Support\Facades\Storage::url($photo->path) }}" class="w-full h-24 object-cover rounded mb-1" alt="" />
                             <p class="text-sm text-gray-500 truncate mb-1">{{ basename($photo->path) }}</p>
-                            <div class="flex items-center justify-between">
+                            <div class="row-actions justify-between">
                                 @if ($photo->is_primary)
                                     <span class="text-sm bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">Primary</span>
                                 @else
-                                    <button wire:click="setPrimaryPhoto({{ $photo->id }})" class="text-sm text-gray-600 hover:underline">Set Primary</button>
+                                    <button wire:click="setPrimaryPhoto({{ $photo->id }})" class="row-action row-action-neutral">Set Primary</button>
                                 @endif
-                                <button wire:click="deletePhoto({{ $photo->id }})" class="text-sm text-red-600 hover:underline">Delete</button>
+                                <button wire:click="deletePhoto({{ $photo->id }})" class="row-action row-action-danger">Delete</button>
                             </div>
                         </div>
                     @endforeach
@@ -554,16 +556,16 @@ new #[Title('Item')] class extends Component {
                                 </div>
                             </div>
                         @else
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+                                <div class="flex min-w-0 flex-wrap items-center gap-2">
                                     <span class="font-medium text-sm">{{ $group->name }}</span>
                                     <span class="text-sm bg-red-100 text-red-700 px-2 py-0.5 rounded">
                                         Required: choose {{ $group->min_select === $group->max_select ? $group->max_select : $group->min_select . '-' . $group->max_select }}
                                     </span>
                                 </div>
-                                <div class="flex gap-2">
-                                    <button wire:click="openEditGroup({{ $group->id }})" class="text-sm text-blue-600 hover:underline">Edit</button>
-                                    <button wire:click="deleteGroup({{ $group->id }})" class="text-sm text-red-600 hover:underline">Delete</button>
+                                <div class="row-actions">
+                                    <button wire:click="openEditGroup({{ $group->id }})" class="row-action">Edit</button>
+                                    <button wire:click="deleteGroup({{ $group->id }})" class="row-action row-action-danger">Delete</button>
                                 </div>
                             </div>
                         @endif
@@ -599,17 +601,17 @@ new #[Title('Item')] class extends Component {
                                         </div>
                                     </div>
                                 @else
-                                    <div class="flex items-center justify-between text-sm border-t border-gray-100 pt-1">
-                                        <div>
+                                    <div class="flex flex-wrap items-center justify-between gap-3 text-sm border-t border-gray-100 pt-2">
+                                        <div class="min-w-0 break-words">
                                             <span>{{ $opt->name_en }}</span>
                                             @if ($opt->name_zh)
                                                 <span class="text-gray-400"> / {{ $opt->name_zh }}</span>
                                             @endif
                                             <span class="text-gray-500 ml-2">+RM{{ number_format((float)$opt->price_adjustment, 2) }}</span>
                                         </div>
-                                        <div class="flex gap-2">
-                                            <button wire:click="openEditOption({{ $opt->id }})" class="text-sm text-blue-600 hover:underline">Edit</button>
-                                            <button wire:click="deleteOption({{ $opt->id }})" class="text-sm text-red-600 hover:underline">Delete</button>
+                                        <div class="row-actions">
+                                            <button wire:click="openEditOption({{ $opt->id }})" class="row-action">Edit</button>
+                                            <button wire:click="deleteOption({{ $opt->id }})" class="row-action row-action-danger">Delete</button>
                                         </div>
                                     </div>
                                 @endif
@@ -645,7 +647,7 @@ new #[Title('Item')] class extends Component {
                                 </div>
                             </div>
                         @else
-                            <button wire:click="$set('addingOptionForGroup', {{ $group->id }})" class="text-sm text-green-600 hover:underline">+ Add Option</button>
+                            <button wire:click="$set('addingOptionForGroup', {{ $group->id }})" class="row-action">+ Add Option</button>
                         @endif
                     </div>
                 @endforeach

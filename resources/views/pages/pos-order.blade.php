@@ -648,9 +648,9 @@ new #[Title('POS / Cashier')] class extends Component
                         <td class="px-3 py-2 whitespace-nowrap">RM{{ number_format((float) $line->subtotal, 2) }}</td>
                         <td class="px-3 py-2 text-right whitespace-nowrap">
                             @if ($this->canEdit)
-                                <div class="flex items-center justify-end gap-2">
-                                    <button wire:click="editLine({{ $line->id }})" class="text-blue-600 hover:underline">Edit</button>
-                                    <button wire:click="confirmRemove({{ $line->id }})" class="text-red-600 hover:underline">Remove</button>
+                                <div class="row-actions row-actions-end">
+                                    <button wire:click="editLine({{ $line->id }})" class="row-action">Edit</button>
+                                    <button wire:click="confirmRemove({{ $line->id }})" class="row-action row-action-danger">Remove</button>
                                 </div>
                             @endif
                         </td>

@@ -22,13 +22,13 @@ new #[Title('Table QR Codes')] class extends Component {
     }
 </style>
 
-<div class="space-y-4">
-    <div class="flex items-center justify-between print-hidden">
-        <div>
+<div class="w-full min-w-0 space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between print-hidden">
+        <div class="min-w-0 max-w-2xl">
             <h1 class="text-xl font-bold text-gray-900">Table QR Codes</h1>
-            <p class="text-sm text-gray-500 mt-1">Print these QR codes and stick them on each table. Customers scan to open the ordering menu.</p>
+            <p class="text-sm leading-relaxed text-gray-600 mt-1">Print these QR codes and stick them on each table. Customers scan to open the ordering menu.</p>
         </div>
-        <button onclick="printAll()" class="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded print-hidden">Print All</button>
+        <button type="button" onclick="printAll()" class="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:ml-auto sm:w-auto print-hidden">Print All</button>
     </div>
 
     @php
@@ -51,7 +51,7 @@ new #[Title('Table QR Codes')] class extends Component {
                     <p class="text-sm text-gray-500 mb-2">Scan to order</p>
                     <div class="flex justify-center mb-2">{!! $svg !!}</div>
                     <p class="text-sm text-gray-400 break-all">{{ $url }}</p>
-                    <button onclick="printOne({{ $table->id }})" class="mt-2 text-sm text-indigo-600 hover:underline print-hidden">Print</button>
+                    <button onclick="printOne({{ $table->id }})" class="row-action mt-3 print-hidden">Print</button>
                 </div>
             </x-card>
         @endforeach

@@ -128,8 +128,10 @@ new #[Title('Category')] class extends Component {
                         <td class="px-3 py-2">{{ $category->description }}</td>
                         <td class="px-3 py-2">{{ $category->sort_order }}</td>
                         <td class="px-3 py-2">
-                            <button wire:click="openEdit({{ $category->id }})" class="text-blue-600 hover:underline mr-2">Edit</button>
-                            <button wire:click="confirmDelete({{ $category->id }})" class="text-red-600 hover:underline">Delete</button>
+                            <div class="row-actions">
+                                <button wire:click="openEdit({{ $category->id }})" class="row-action">Edit</button>
+                                <button wire:click="confirmDelete({{ $category->id }})" class="row-action row-action-danger">Delete</button>
+                            </div>
                         </td>
                     </tr>
                 @endforeach

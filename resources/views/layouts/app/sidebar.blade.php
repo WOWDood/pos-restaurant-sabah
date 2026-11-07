@@ -102,8 +102,8 @@
             </aside>
 
             {{-- Main content --}}
-            <main class="ml-0 md:ml-60 mt-12 p-4 sm:p-6 bg-gray-100 min-h-screen print:ml-0 print:mt-0">
-                <div class="max-w-6xl mx-auto min-w-0">
+            <main class="min-w-0 flex-1 ml-0 md:ml-60 mt-12 p-4 sm:p-6 bg-gray-100 min-h-screen print:ml-0 print:mt-0">
+                <div class="w-full min-w-0">
                     {{ $slot }}
                 </div>
             </main>
